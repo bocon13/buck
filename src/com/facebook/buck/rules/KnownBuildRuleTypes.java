@@ -130,6 +130,7 @@ import com.facebook.buck.ocaml.OCamlBinaryDescription;
 import com.facebook.buck.ocaml.OCamlBuckConfig;
 import com.facebook.buck.ocaml.OCamlLibraryDescription;
 import com.facebook.buck.ocaml.PrebuiltOCamlLibraryDescription;
+import com.facebook.buck.plugin.PluginManager;
 import com.facebook.buck.python.CxxPythonExtensionDescription;
 import com.facebook.buck.python.PrebuiltPythonLibraryDescription;
 import com.facebook.buck.python.PythonBinaryDescription;
@@ -233,11 +234,13 @@ public class KnownBuildRuleTypes {
   public static KnownBuildRuleTypes createInstance(
       BuckConfig config,
       ProcessExecutor processExecutor,
-      AndroidDirectoryResolver androidDirectoryResolver) throws InterruptedException, IOException {
+      AndroidDirectoryResolver androidDirectoryResolver,
+      PluginManager pluginManager) throws InterruptedException, IOException {
     return createBuilder(
         config,
         processExecutor,
-        androidDirectoryResolver).build();
+        androidDirectoryResolver,
+        pluginManager).build();
   }
 
   private static ImmutableList<AppleCxxPlatform> buildAppleCxxPlatforms(
@@ -294,7 +297,8 @@ public class KnownBuildRuleTypes {
   static Builder createBuilder(
       BuckConfig config,
       ProcessExecutor processExecutor,
-      AndroidDirectoryResolver androidDirectoryResolver) throws InterruptedException, IOException {
+      AndroidDirectoryResolver androidDirectoryResolver,
+      PluginManager pluginManager) throws InterruptedException, IOException {
 
     Platform platform = Platform.detect();
 
@@ -767,6 +771,10 @@ public class KnownBuildRuleTypes {
     builder.setCxxPlatforms(cxxPlatforms);
     builder.setDefaultCxxPlatform(defaultCxxPlatform);
 
+    //FIXME BOC add all of types from the plugins
+    for(Description<?> description : pluginManager.buildDescriptions()) {
+      builder.register(description);
+    }
     return builder;
   }
 

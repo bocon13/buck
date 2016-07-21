@@ -80,4 +80,8 @@ public final class ClassLoaderBootstrapper {
 
     return new URLClassLoader(urls);
   }
+
+  public static ClassLoader getBuckClassLoader() {
+    return classLoader;
+  }
 }

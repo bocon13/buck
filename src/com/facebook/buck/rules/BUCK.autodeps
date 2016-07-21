@@ -1,4 +1,4 @@
-#@# GENERATED FILE: DO NOT MODIFY 523d543adef098933595342fbacfcf4b6b0f63c4 #@#
+#@# GENERATED FILE: DO NOT MODIFY 99345be8444dcac22dd4b0da24e543b80d67e5be #@#
 {
   "action_graph_cache" : {
     "deps" : [
@@ -223,6 +223,7 @@
       "//src/com/facebook/buck/io:watchman",
       "//src/com/facebook/buck/json:json",
       "//src/com/facebook/buck/model:model",
+      "//src/com/facebook/buck/plugin:plugin",
       "//src/com/facebook/buck/rules:build_rule",
       "//src/com/facebook/buck/rules:interfaces",
       "//src/com/facebook/buck/timing:timing",
