@@ -44,7 +44,11 @@ public class FileClassPathRunnerTest {
 
   @Test
   public void shouldNotTryAndReadFilesIfNoneAreFoundInUrlList() throws IOException {
-    URL[] urls = new URL[] {new URL("file://foo/bar")};
+    URL[] urls = new URL[] {
+        new URL("file://foo/bar"),
+        new URL("file:"),
+        new URL("file:@")
+    };
 
     List<Path> classpathFiles = FileClassPathRunner.getClasspathFiles(urls);
     assertEquals(0, classpathFiles.size());

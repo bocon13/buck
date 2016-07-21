@@ -164,7 +164,7 @@ public class RunShTestAndRecordResultStep implements Step {
           "sh_test",
           /* type */ isSuccess ? ResultType.SUCCESS : ResultType.FAILURE,
           test.getDuration(),
-          /* message */ null,
+          /* message */ isSuccess ? null : null, //FIXME BOC String.format("Exit code: %d", executionResult),
           /* stacktrace */ null,
           test.getStdout(),
           test.getStderr());
