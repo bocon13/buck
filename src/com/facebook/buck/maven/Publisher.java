@@ -16,6 +16,8 @@
 
 package com.facebook.buck.maven;
 
+import com.facebook.buck.cli.BuckConfig;
+import com.facebook.buck.cli.PublishConfig;
 import com.facebook.buck.io.ProjectFilesystem;
 import com.facebook.buck.jvm.java.MavenPublishable;
 import com.facebook.buck.log.Logger;
@@ -47,7 +49,9 @@ import org.eclipse.aether.util.artifact.SubArtifact;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.MalformedURLException;
+import java.net.PasswordAuthentication;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -71,12 +75,34 @@ public class Publisher {
   private final LocalRepository localRepo;
   private final RemoteRepository remoteRepo;
   private final boolean dryRun;
+  private final boolean signArtifacts;
+  private final PublishConfig config;
+  //FIXME BOC requires refactor
+  private final PrintStream console;
 
+  //FIXME some of these constructors can be pruned
   public Publisher(
       ProjectFilesystem repositoryFilesystem,
       Optional<URL> remoteRepoUrl,
       boolean dryRun) {
     this(repositoryFilesystem.getRootPath(), remoteRepoUrl, dryRun);
+  }
+
+  public Publisher(
+      ProjectFilesystem repositoryFilesystem,
+      Optional<URL> remoteRepoUrl,
+      PrintStream console,
+      BuckConfig config,
+      boolean dryRun,
+      boolean signArtifacts) {
+    this(repositoryFilesystem.getRootPath(), remoteRepoUrl, config, console, dryRun, signArtifacts);
+  }
+
+  public Publisher(
+      Path localRepoPath,
+      Optional<URL> remoteRepoUrl,
+      boolean dryRun) {
+    this(localRepoPath, remoteRepoUrl, null, null, dryRun, false);
   }
 
   /**
@@ -85,15 +111,34 @@ public class Publisher {
    * @param remoteRepoUrl Canonically {@link #MAVEN_CENTRAL_URL}
    * @param dryRun if true, a dummy {@link DeployResult} will be returned, with the fully
    *               constructed {@link DeployRequest}. No actual publishing will happen
+   * @param signArtifacts FIXME
    */
   public Publisher(
       Path localRepoPath,
       Optional<URL> remoteRepoUrl,
-      boolean dryRun) {
-    this.localRepo = new LocalRepository(localRepoPath.toFile());
-    this.remoteRepo = AetherUtil.toRemoteRepository(remoteRepoUrl.or(MAVEN_CENTRAL));
-    this.locator = AetherUtil.initServiceLocator();
+      BuckConfig config,
+      PrintStream console,
+      boolean dryRun,
+      boolean signArtifacts) {
+
+    //FIXME careful about config NPE
+    this.config = new PublishConfig(config);
     this.dryRun = dryRun;
+    this.signArtifacts = signArtifacts;
+
+    this.localRepo = new LocalRepository(localRepoPath.toFile());
+
+    ArtifactConfig.Repository repo = new ArtifactConfig.Repository();
+    repo.url = remoteRepoUrl.or(this.config.getPublishRepoUrl()).or(MAVEN_CENTRAL).toString();
+    Optional<PasswordAuthentication> authentication = this.config.getRepoCredentials();
+    if (authentication.isPresent()) {
+      repo.user = authentication.get().getUserName();
+      repo.password = new String(authentication.get().getPassword());
+    }
+    this.remoteRepo = AetherUtil.toRemoteRepository(repo);
+
+    this.locator = AetherUtil.initServiceLocator();
+    this.console = console;
   }
 
   public ImmutableSet<DeployResult> publish(
@@ -137,15 +182,17 @@ public class Publisher {
           .resolve(relativePathToOutput)
           .toFile();
 
-      if (!coords.getClassifier().isEmpty()) {
-        deployResultBuilder.add(publish(coords, ImmutableList.of(mainItem)));
-      }
 
       try {
-        // If this is the "main" artifact (denoted by lack of classifier) generate and publish
-        // pom alongside
-        File pom = Pom.generatePomFile(publishable).toFile();
-        deployResultBuilder.add(publish(coords, ImmutableList.of(mainItem, pom)));
+        if (coords.getClassifier().isEmpty() && coords.getExtension().endsWith("jar")) {
+          // If this is the "main" artifact (denoted by lack of classifier) generate and publish
+          // pom alongside
+          File pom = Pom.generatePomFile(publishable).toFile();
+          deployResultBuilder.add(publish(coords, ImmutableList.of(mainItem, pom)));
+        } else {
+          // Otherwise, just publish the auxiliary artifact (e.g. -sources, -tests, -javadoc)
+          deployResultBuilder.add(publish(coords, ImmutableList.of(mainItem)));
+        }
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -227,6 +274,15 @@ public class Publisher {
           descriptor.getClassifier(),
           Files.getFileExtension(file.getAbsolutePath()),
           file));
+
+      if (signArtifacts) {
+        artifacts.add(new SubArtifact(
+            descriptor,
+            descriptor.getClassifier(),
+            Files.getFileExtension(file.getAbsolutePath()) + ".asc",
+            new Signer(config.getPpgKeyring().get(), new String(config.getPgpPassword()), file).getSignatureFile()
+        ));
+      }
     }
     return publish(artifacts);
   }
@@ -246,13 +302,26 @@ public class Publisher {
 
     DeployRequest deployRequest = createDeployRequest(toPublish);
 
+    print(toPublish);
+
     if (dryRun) {
       return new DeployResult(deployRequest)
           .setArtifacts(toPublish)
           .setMetadata(deployRequest.getMetadata());
     } else {
       return repoSys.deploy(session, deployRequest);
+
     }
+  }
+
+  private void print(List<Artifact> toPublish) {
+    StringBuilder sb = new StringBuilder("Uploading...\n");
+    for (Artifact artifact : toPublish) {
+      sb.append(String.format("\t%s:%s:%s:%s:%s <- %s\n",
+        artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
+        artifact.getClassifier(), artifact.getExtension(), artifact.getFile().getPath()));
+    }
+    console.print(sb);
   }
 
   private DeployRequest createDeployRequest(List<Artifact> toPublish) {

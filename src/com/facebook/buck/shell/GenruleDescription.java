@@ -16,6 +16,8 @@
 
 package com.facebook.buck.shell;
 
+import com.facebook.buck.model.Flavor;
+import com.facebook.buck.model.Flavored;
 import com.facebook.buck.rules.BuildRule;
 import com.facebook.buck.rules.BuildRuleParams;
 import com.facebook.buck.rules.BuildRuleResolver;
@@ -23,8 +25,10 @@ import com.facebook.buck.rules.BuildRuleType;
 import com.facebook.buck.rules.SourcePathResolver;
 import com.facebook.infer.annotation.SuppressFieldNotInitialized;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableSet;
 
-public class GenruleDescription extends AbstractGenruleDescription<GenruleDescription.Arg> {
+public class GenruleDescription extends AbstractGenruleDescription<GenruleDescription.Arg>
+    implements Flavored {
 
   public static final BuildRuleType TYPE = BuildRuleType.of("genrule");
 
@@ -54,6 +58,7 @@ public class GenruleDescription extends AbstractGenruleDescription<GenruleDescri
           cmd,
           bash,
           cmdExe,
+          args.mavenCoords,
           args.out);
     } else {
       return new GenruleBinary(
@@ -63,13 +68,20 @@ public class GenruleDescription extends AbstractGenruleDescription<GenruleDescri
           cmd,
           bash,
           cmdExe,
+          args.mavenCoords,
           args.out);
     }
+  }
+
+  @Override
+  public boolean hasFlavors(ImmutableSet<Flavor> flavors) {
+    return true; //FIXME BOC
   }
 
   @SuppressFieldNotInitialized
   public static class Arg extends AbstractGenruleDescription.Arg {
     public Optional<Boolean> executable;
+    public Optional<String> mavenCoords;
   }
 
 }

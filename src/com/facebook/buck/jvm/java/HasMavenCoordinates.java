@@ -27,6 +27,12 @@ public interface HasMavenCoordinates extends BuildRule {
    */
   Optional<String> getMavenCoords();
 
+  /**
+   * Used to identify the parent of this artifact within a maven repository
+   */
+  //FIXME BOC
+//  Optional<String> getMavenParent();
+
   public static final Predicate<BuildRule> MAVEN_COORDS_PRESENT_PREDICATE =
       input -> input instanceof HasMavenCoordinates &&
           ((HasMavenCoordinates) input).getMavenCoords().isPresent();

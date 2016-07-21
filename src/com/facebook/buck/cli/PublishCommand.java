@@ -21,6 +21,7 @@ import com.facebook.buck.jvm.java.JavaLibrary;
 import com.facebook.buck.jvm.java.MavenPublishable;
 import com.facebook.buck.maven.Publisher;
 import com.facebook.buck.model.BuildTarget;
+import com.facebook.buck.model.Flavor;
 import com.facebook.buck.parser.BuildTargetSpec;
 import com.facebook.buck.parser.NoSuchBuildTargetException;
 import com.facebook.buck.parser.TargetNodeSpec;
@@ -49,8 +50,10 @@ public class PublishCommand extends BuildCommand {
   public static final String REMOTE_REPO_SHORT_ARG = "-r";
   public static final String INCLUDE_SOURCE_LONG_ARG = "--include-source";
   public static final String INCLUDE_SOURCE_SHORT_ARG = "-s";
+  public static final String INCLUDE_JAVADOC_LONG_ARG = "--include-javadoc";
   public static final String TO_MAVEN_CENTRAL_LONG_ARG = "--to-maven-central";
   public static final String DRY_RUN_LONG_ARG = "--dry-run";
+  public static final String SIGN_LONG_ARG = "--sign";
 
   @Option(
       name = REMOTE_REPO_LONG_ARG,
@@ -71,9 +74,21 @@ public class PublishCommand extends BuildCommand {
   private boolean includeSource = false;
 
   @Option(
+      name = INCLUDE_JAVADOC_LONG_ARG,
+      usage = "Publish javadoc as well")
+  private boolean includeJavadoc = false;
+
+  @Option(
       name = DRY_RUN_LONG_ARG,
       usage = "Just print the artifacts to be published")
   private boolean dryRun = false;
+
+  @Option(
+      name = SIGN_LONG_ARG,
+      usage = "Sign the artifacts")
+  private boolean signArtifacts = false;
+
+  private BuckConfig config;
 
   @Override
   public int runWithoutHelp(CommandRunnerParams params) throws IOException, InterruptedException {
@@ -133,7 +148,10 @@ public class PublishCommand extends BuildCommand {
     Publisher publisher = new Publisher(
         params.getCell().getFilesystem(),
         Optional.fromNullable(remoteRepo),
-        dryRun);
+        params.getConsole().getStdOut(), // FIXME BOC pass through better
+        config, // FIXME BOC pass through better
+        dryRun,
+        signArtifacts);
 
     try {
       ImmutableSet<DeployResult> deployResults = publisher.publish(publishables.build());
@@ -198,35 +216,47 @@ public class PublishCommand extends BuildCommand {
     }
 
     // Append "maven" flavor
-    specs = FluentIterable
-        .from(specs)
-        .transform(
-            new Function<TargetNodeSpec, TargetNodeSpec>() {
-              @Nullable
-              @Override
-              public TargetNodeSpec apply(@Nullable TargetNodeSpec input) {
-                if (!(input instanceof BuildTargetSpec)) {
-                  throw new IllegalArgumentException(
-                      "Need to specify build targets explicitly when publishing. " +
-                          "Cannot modify " + input);
-                }
-                BuildTargetSpec buildTargetSpec = (BuildTargetSpec) input;
-                BuildTarget buildTarget =
-                    Preconditions.checkNotNull(buildTargetSpec.getBuildTarget());
-                return buildTargetSpec.withBuildTarget(
-                    BuildTarget
-                        .builder(buildTarget)
-                        .addFlavors(JavaLibrary.MAVEN_JAR)
-                        .build());
-              }
-            })
-        .toList();
+    ImmutableList.Builder<TargetNodeSpec> builder = ImmutableList.<TargetNodeSpec>builder()
+          .addAll(FluentIterable.from(specs)
+              .transform(
+                  new Function<TargetNodeSpec, TargetNodeSpec>() {
+                    @Nullable
+                    @Override
+                    public TargetNodeSpec apply(@Nullable TargetNodeSpec input) {
+                      if (!(input instanceof BuildTargetSpec)) {
+                        throw new IllegalArgumentException(
+                            "Need to specify build targets explicitly when publishing. " +
+                                "Cannot modify " + input);
+                      }
+                      BuildTargetSpec buildTargetSpec = (BuildTargetSpec) input;
+                      BuildTarget buildTarget =
+                          Preconditions.checkNotNull(buildTargetSpec.getBuildTarget());
+                      return buildTargetSpec.withBuildTarget(
+                          BuildTarget
+                              .builder(buildTarget)
+                              .addFlavors(JavaLibrary.MAVEN_JAR)
+                              .build());
+                    }
+                  }));
 
-    return specs;
+    if (includeSource) {
+      addFlavorToSpecList(specs, JavaLibrary.SRC_JAR, builder);
+    }
+
+    if (includeJavadoc) {
+      addFlavorToSpecList(specs, JavaLibrary.JAVADOC_JAR, builder);
+    }
+
+    return builder.build();
   }
 
   @Override
   public String getShortDescription() {
     return "builds and publishes a library to a central repository";
+  }
+
+  //FIXME BOC hackcity
+  public void setBuckConfig(BuckConfig config) {
+    this.config = config;
   }
 }

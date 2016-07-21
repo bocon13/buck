@@ -56,6 +56,11 @@ public interface JavaLibrary extends BuildRule, HasClasspathEntries,
   public static final Flavor SRC_JAR = ImmutableFlavor.of("src");
 
   /**
+   * It's possible to ask a {@link JavaLibrary} to build a javadoc jar from its sources.
+   */
+  public static final Flavor JAVADOC_JAR = ImmutableFlavor.of("javadoc");
+
+  /**
    * For maven publishing only dependencies containing maven coordinates will be listed as
    * dependencies. Others will be packaged-in, and their first-order dependencies considered
    * in the same manner

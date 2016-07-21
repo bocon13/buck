@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 #@# GENERATED FILE: DO NOT MODIFY f0666fbda7df71390888400a31dbdf196a6031f1 #@#
+=======
+#@# GENERATED FILE: DO NOT MODIFY 230165188865b595d2b2bd3c8968eb25a98cd920 #@#
+>>>>>>> 4bb92a2... half baked attempt at adding documentation for sh_test
 {
   "event" : {
     "deps" : [
@@ -17,8 +21,7 @@
       "//src/com/facebook/buck/timing:timing",
       "//src/com/facebook/buck/util/immutables:immutables",
       "//third-party/java/guava:guava",
-      "//third-party/java/jackson:jackson-annotations",
-      "//third-party/java/jackson:jackson-databind"
+      "//third-party/java/jackson:jackson-annotations"
     ]
   }
 }

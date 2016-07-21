@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 #@# GENERATED FILE: DO NOT MODIFY 103772d6873c440d95d4f5f570b2b0af4cc9c06b #@#
+=======
+#@# GENERATED FILE: DO NOT MODIFY 495492e577568dd00b7614222d6417c6f52bf5f9 #@#
+>>>>>>> 4bb92a2... half baked attempt at adding documentation for sh_test
 {
   "rules" : {
     "deps" : [
@@ -14,6 +18,7 @@
       "//third-party/java/stringtemplate:stringtemplate"
     ],
     "exported_deps" : [
+      "//src/com/facebook/buck/jvm/java:support",
       "//src/com/facebook/buck/model:model",
       "//src/com/facebook/buck/parser:rule_pattern",
       "//src/com/facebook/buck/rules:build_rule",

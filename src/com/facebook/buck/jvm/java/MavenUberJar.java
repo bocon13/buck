@@ -33,11 +33,13 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 
 import java.nio.file.Path;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -217,6 +219,65 @@ public class MavenUberJar extends AbstractBuildRule implements MavenPublishable 
     }
   }
 
+  public static class MavenJavadocJar extends JavadocJar implements MavenPublishable {
+
+    private final TraversedDeps traversedDeps;
+
+    public MavenJavadocJar(
+        BuildRuleParams params,
+        SourcePathResolver resolver,
+        ImmutableSortedSet<SourcePath> topLevelSrcs,
+        ImmutableSortedMap<SourcePath, Path> docFiles,
+        JavadocArgs javadocArgs,
+        Optional<String> mavenCoords,
+        TraversedDeps traversedDeps) {
+      super(params, resolver, topLevelSrcs, docFiles, javadocArgs, mavenCoords);
+      this.traversedDeps = traversedDeps;
+    }
+
+    public static MavenJavadocJar create(
+        BuildRuleParams params,
+        final SourcePathResolver resolver,
+        ImmutableSortedSet<SourcePath> topLevelSrcs,
+        ImmutableSortedMap<SourcePath, Path> docFiles,
+        JavadocArgs javadocArgs,
+        Optional<String> mavenCoords) {
+      TraversedDeps traversedDeps = TraversedDeps.traverse(params.getDeps());
+
+      ImmutableSortedSet<SourcePath> sourcePaths =
+          FluentIterable
+              .from(traversedDeps.packagedDeps)
+              .filter(HasSources.class)
+              .transformAndConcat(
+                  new Function<HasSources, Iterable<SourcePath>>() {
+                    @Override
+                    public Iterable<SourcePath> apply(HasSources input) {
+                      return input.getSources();
+                    }
+                  })
+              .append(topLevelSrcs)
+              .toSortedSet(Ordering.natural());
+      return new MavenJavadocJar(
+          params,
+          resolver,
+          sourcePaths,
+          docFiles,
+          javadocArgs,
+          mavenCoords,
+          traversedDeps);
+    }
+
+    @Override
+    public Iterable<HasMavenCoordinates> getMavenDeps() {
+      return traversedDeps.mavenDeps;
+    }
+
+    @Override
+    public Iterable<BuildRule> getPackagedDependencies() {
+      return traversedDeps.packagedDeps;
+    }
+  }
+
   private static class TraversedDeps {
     public final Iterable<HasMavenCoordinates> mavenDeps;
     public final Iterable<BuildRule> packagedDeps;
@@ -229,31 +290,31 @@ public class MavenUberJar extends AbstractBuildRule implements MavenPublishable 
     }
 
     private static TraversedDeps traverse(ImmutableSet<? extends BuildRule> roots) {
-      ImmutableSortedSet.Builder<HasMavenCoordinates> depsCollector =
+      ImmutableSortedSet.Builder<JavaLibrary> candidates =
           ImmutableSortedSet.naturalOrder();
-
-      ImmutableSortedSet.Builder<JavaLibrary> candidates = ImmutableSortedSet.naturalOrder();
       for (final BuildRule root : roots) {
         Preconditions.checkState(root instanceof HasClasspathEntries);
         candidates.addAll(FluentIterable
             .from(((HasClasspathEntries) root).getTransitiveClasspathDeps())
             .filter(buildRule -> !root.equals(buildRule)));
+        // root will be included as a candidate
+        candidates.addAll(((HasClasspathEntries) root).getTransitiveClasspathDeps());
       }
-      ImmutableSortedSet.Builder<JavaLibrary> removals = ImmutableSortedSet.naturalOrder();
+
+      ImmutableSortedSet.Builder<HasMavenCoordinates> mavenDepsBuilder = ImmutableSortedSet.naturalOrder();
       for (JavaLibrary javaLibrary : candidates.build()) {
         if (HasMavenCoordinates.MAVEN_COORDS_PRESENT_PREDICATE.apply(javaLibrary)) {
-          depsCollector.add(javaLibrary);
-          removals.addAll(javaLibrary.getTransitiveClasspathDeps());
+          mavenDepsBuilder.add(javaLibrary);
+          //FIXME BOC do we always want to exclude all of a maven jar's dependencies? probably.
+          mavenDepsBuilder.addAll(javaLibrary.getTransitiveClasspathDeps());
         }
       }
 
+      Set<HasMavenCoordinates> mavenDeps = Sets.difference(mavenDepsBuilder.build(), roots);
+      Set<JavaLibrary> packagedDeps = Sets.difference(candidates.build(), mavenDeps);
       return new TraversedDeps(
-          /* mavenDeps */ depsCollector.build(),
-          /* packagedDeps */ Sets.union(
-          roots,
-          Sets.difference(
-              candidates.build(),
-              removals.build())));
+          /* mavenDeps */ mavenDeps,
+          /* packagedDeps */ ImmutableSet.<BuildRule>copyOf(packagedDeps));
     }
   }
 }

@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 #@# GENERATED FILE: DO NOT MODIFY 672134547675cfa3ffacd23222f513fa19af334a #@#
+=======
+#@# GENERATED FILE: DO NOT MODIFY aad67b08249d3f96faceb6f74c93d7cc47a2c62f #@#
+>>>>>>> 4bb92a2... half baked attempt at adding documentation for sh_test
 {
   "autodeps" : {
     "deps" : [
@@ -72,6 +76,7 @@
       "//src/com/facebook/buck/step/fs:fs",
       "//src/com/facebook/buck/test/result/type:type",
       "//src/com/facebook/buck/test/selectors:selectors",
+      "//src/com/facebook/buck/util:escaper",
       "//src/com/facebook/buck/util:exceptions",
       "//src/com/facebook/buck/util:util",
       "//src/com/facebook/buck/util/sha1:sha1",
@@ -91,6 +96,7 @@
       "//src/com/facebook/buck/rules:interfaces",
       "//src/com/facebook/buck/rules:rules",
       "//src/com/facebook/buck/rules/keys:keys",
+      "//src/com/facebook/buck/shell:steps",
       "//src/com/facebook/buck/step:step",
       "//src/com/facebook/buck/test:test",
       "//third-party/java/guava:guava",

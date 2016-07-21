@@ -19,6 +19,8 @@ package com.facebook.buck.shell;
 import com.facebook.buck.android.AndroidPlatformTarget;
 import com.facebook.buck.android.NoAndroidSdkException;
 import com.facebook.buck.io.MorePaths;
+import com.facebook.buck.jvm.java.HasMavenCoordinates;
+import com.facebook.buck.jvm.java.MavenPublishable;
 import com.facebook.buck.model.BuildTarget;
 import com.facebook.buck.model.BuildTargets;
 import com.facebook.buck.model.HasOutputName;
@@ -103,7 +105,7 @@ import java.util.Set;
  * Note that the <code>SRCDIR</code> is populated by symlinking the sources.
  */
 public class Genrule extends AbstractBuildRule
-    implements HasOutputName, SupportsInputBasedRuleKey {
+    implements HasOutputName, SupportsInputBasedRuleKey, MavenPublishable {
 
   /**
    * The order in which elements are specified in the {@code srcs} attribute of a genrule matters.
@@ -117,6 +119,8 @@ public class Genrule extends AbstractBuildRule
   protected final Optional<Arg> bash;
   @AddToRuleKey
   protected final Optional<Arg> cmdExe;
+  @AddToRuleKey
+  protected final Optional<String> mavenCoords;
 
   @AddToRuleKey
   private final String out;
@@ -136,11 +140,24 @@ public class Genrule extends AbstractBuildRule
       Optional<Arg> bash,
       Optional<Arg> cmdExe,
       String out) {
+    this(params, resolver, srcs, cmd, bash, cmdExe, Optional.<String>absent(), out);
+  }
+
+  protected Genrule(
+      BuildRuleParams params,
+      SourcePathResolver resolver,
+      List<SourcePath> srcs,
+      Optional<Arg> cmd,
+      Optional<Arg> bash,
+      Optional<Arg> cmdExe,
+      Optional<String> mavenCoords,
+      String out) {
     super(params, resolver);
     this.srcs = ImmutableList.copyOf(srcs);
     this.cmd = cmd;
     this.bash = bash;
     this.cmdExe = cmdExe;
+    this.mavenCoords = mavenCoords;
 
     this.out = out;
     BuildTarget target = params.getBuildTarget();
@@ -419,4 +436,18 @@ public class Genrule extends AbstractBuildRule
     return out;
   }
 
+  @Override
+  public Iterable<HasMavenCoordinates> getMavenDeps() {
+    return ImmutableList.of();
+  }
+
+  @Override
+  public Iterable<BuildRule> getPackagedDependencies() {
+    return ImmutableList.of();
+  }
+
+  @Override
+  public Optional<String> getMavenCoords() {
+    return mavenCoords;
+  }
 }

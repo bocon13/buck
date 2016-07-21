@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 #@# GENERATED FILE: DO NOT MODIFY 0c1df29c7da493d43b2892866d41fcba1853a92d #@#
+=======
+#@# GENERATED FILE: DO NOT MODIFY 92be67cceecd4dcdf1a6b8479b66221f3fe66bca #@#
+>>>>>>> 4bb92a2... half baked attempt at adding documentation for sh_test
 {
   "maven" : {
     "deps" : [
@@ -15,6 +19,7 @@
       "//third-party/java/stringtemplate:stringtemplate"
     ],
     "exported_deps" : [
+      "//src/com/facebook/buck/cli:config",
       "//src/com/facebook/buck/io:io",
       "//src/com/facebook/buck/jvm/java:support",
       "//src/com/facebook/buck/maven:util",
@@ -31,6 +36,8 @@
       "//third-party/java/aether:aether-impl",
       "//third-party/java/aether:aether-transport-http",
       "//third-party/java/aether:aether-util",
+      "//third-party/java/bouncycastle:bcpg",
+      "//third-party/java/bouncycastle:bcprov",
       "//third-party/java/jackson:jackson-databind",
       "//third-party/java/maven:maven-aether-provider",
       "//third-party/java/slf4j:slf4j-api"

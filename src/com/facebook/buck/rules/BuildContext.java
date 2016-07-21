@@ -58,6 +58,9 @@ public abstract class BuildContext {
   protected abstract ObjectMapper getObjectMapper();
   protected abstract Map<String, String> getEnvironment();
 
+  // FIXME BOC
+  //public abstract List<Step> additionalStepFactory(BuildRule rule);
+
   @Value.Default
   public boolean isKeepGoing() {
     return false;

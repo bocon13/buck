@@ -15,7 +15,9 @@ CONFIG_SRCS = [
   'BuckConfig.java',
   'DownloadConfig.java',
   'ProjectTestsMode.java',
+  'PluginConfig.java',
   'SlbBuckConfig.java',
+  'PublishConfig.java',
 ]
 java_library(
   name = 'config',
@@ -84,4 +86,5 @@ genrule(
   visibility = [
     'PUBLIC',
   ],
+  maven_coords = 'org.onosproject:buck-api:0.1-SNAPSHOT'
 )

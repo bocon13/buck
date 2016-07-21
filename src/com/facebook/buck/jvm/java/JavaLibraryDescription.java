@@ -41,6 +41,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 
@@ -51,7 +52,8 @@ public class JavaLibraryDescription implements Description<JavaLibraryDescriptio
   public static final BuildRuleType TYPE = BuildRuleType.of("java_library");
   public static final ImmutableSet<Flavor> SUPPORTED_FLAVORS = ImmutableSet.of(
       JavaLibrary.SRC_JAR,
-      JavaLibrary.MAVEN_JAR);
+      JavaLibrary.MAVEN_JAR,
+      JavaLibrary.JAVADOC_JAR);
 
   @VisibleForTesting
   final JavacOptions defaultOptions;
@@ -79,7 +81,7 @@ public class JavaLibraryDescription implements Description<JavaLibraryDescriptio
   public <A extends Arg> BuildRule createBuildRule(
       TargetGraph targetGraph,
       BuildRuleParams params,
-      BuildRuleResolver resolver,
+      final BuildRuleResolver resolver,
       A args) {
     SourcePathResolver pathResolver = new SourcePathResolver(resolver);
     BuildTarget target = params.getBuildTarget();
@@ -126,6 +128,52 @@ public class JavaLibraryDescription implements Description<JavaLibraryDescriptio
         args
     );
 
+    if (flavors.contains(JavaLibrary.JAVADOC_JAR)) {
+      args.mavenCoords = args.mavenCoords.transform(
+          new Function<String, String>() {
+            @Override
+            public String apply(String input) {
+              return AetherUtil.addClassifier(input, AetherUtil.CLASSIFIER_JAVADOC);
+            }
+          });
+
+      JavadocJar.JavadocArgs.Builder javadocArgs = JavadocJar.JavadocArgs.builder()
+          .addArg("-windowtitle", target.getShortName())
+          .addJavaSELink(javacOptions.getSourceLevel());
+
+      if (args.javadocArgs.isPresent()) {
+        for (String line : args.javadocArgs.get()) {
+          javadocArgs.addArgLine(line);
+        }
+      }
+
+      final ImmutableSortedMap.Builder<SourcePath, Path> javadocFiles = ImmutableSortedMap.naturalOrder();
+      if (args.javadocFiles.isPresent()) {
+        for (SourcePath path : args.javadocFiles.get()) {
+          javadocFiles.put(path,
+              JavadocJar.getDocfileWithPath(pathResolver, path, args.javadocFilesRoot.orNull()));
+        }
+      }
+
+      if (!flavors.contains(JavaLibrary.MAVEN_JAR)) {
+        return new JavadocJar(
+            params,
+            pathResolver,
+            args.srcs.get(),
+            javadocFiles.build(),
+            javadocArgs.build(),
+            args.mavenCoords);
+      } else {
+        return MavenUberJar.MavenJavadocJar.create(
+            Preconditions.checkNotNull(paramsWithMavenFlavor),
+            pathResolver,
+            args.srcs.get(),
+            javadocFiles.build(),
+            javadocArgs.build(),
+            args.mavenCoords);
+      }
+    }
+
     BuildTarget abiJarTarget = params.getBuildTarget().withAppendedFlavors(CalculateAbi.FLAVOR);
 
     ImmutableSortedSet<BuildRule> exportedDeps = resolver.getAllRules(args.exportedDeps.get());
@@ -170,7 +218,7 @@ public class JavaLibraryDescription implements Description<JavaLibraryDescriptio
             params,
             new BuildTargetSourcePath(defaultJavaLibrary.getBuildTarget())));
 
-  if (!flavors.contains(JavaLibrary.MAVEN_JAR)) {
+    if (!flavors.contains(JavaLibrary.MAVEN_JAR)) {
       return defaultJavaLibrary;
     } else {
       return MavenUberJar.create(
@@ -201,6 +249,10 @@ public class JavaLibraryDescription implements Description<JavaLibraryDescriptio
     public Optional<ImmutableSortedSet<BuildTarget>> providedDeps;
     public Optional<ImmutableSortedSet<BuildTarget>> exportedDeps;
     public Optional<ImmutableSortedSet<BuildTarget>> deps;
+
+    public Optional<ImmutableList<String>> javadocArgs;
+    public Optional<ImmutableSortedSet<SourcePath>> javadocFiles;
+    public Optional<Path> javadocFilesRoot;
 
     @Hint(isDep = false) public Optional<ImmutableSortedSet<BuildTarget>> tests;
 

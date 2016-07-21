@@ -39,6 +39,7 @@ import org.apache.maven.model.IssueManagement;
 import org.apache.maven.model.License;
 import org.apache.maven.model.MailingList;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.Parent;
 import org.apache.maven.model.Organization;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.Prerequisites;
@@ -341,6 +342,26 @@ public class Pom {
     model.setGroupId(mavenCoordinates.getGroupId());
     model.setArtifactId(mavenCoordinates.getArtifactId());
     model.setVersion(mavenCoordinates.getVersion());
+
+    //FIXME BOC this needs to be resolved
+    Parent pom = new Parent();
+    pom.setGroupId("org.onosproject");
+    pom.setArtifactId("onos-base");
+    pom.setVersion("1");
+    model.setParent(pom);
+//    model.setUrl("https://url.com");
+//    Developer dev = new Developer();
+//    dev.setName("foo");
+//    dev.setEmail("bar@baz.net");
+//    model.setDevelopers(Lists.newArrayList(dev));
+//    Scm scm = new Scm();
+//    scm.setUrl("https://scm.com");
+//    model.setScm(scm);
+//    License license = new License();
+//    license.setUrl("http://license.com");
+//    model.setLicenses(Lists.newArrayList(license));
+//    model.setDescription("this is a cool project");
+
     if (Strings.isNullOrEmpty(model.getName())) {
       model.setName(mavenCoordinates.getArtifactId()); // better than nothing
     }
@@ -361,7 +382,8 @@ public class Pom {
 
   private static void updateDependency(Dependency dependency, Artifact providedMavenCoordinates) {
     dependency.setVersion(providedMavenCoordinates.getVersion());
-    dependency.setClassifier(providedMavenCoordinates.getClassifier());
+    //FIXME BOC hack
+    dependency.setClassifier(providedMavenCoordinates.getClassifier().equals("NON-OSGI") ? "" : providedMavenCoordinates.getClassifier());
   }
 
   public void flushToFile() throws IOException {

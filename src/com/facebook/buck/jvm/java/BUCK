@@ -98,6 +98,7 @@ java_library(
 java_library(
   name = 'rules',
   srcs = [
+    'AbstractJavaLibrary.java',
     'BuiltInJavac.java',
     'CalculateAbi.java',
     'DefaultJavaLibrary.java',
@@ -114,6 +115,7 @@ java_library(
     'JavaLibraryRules.java',
     'JavaLibraryWithTests.java',
     'JavaSourceJar.java',
+    'JavadocJar.java',
     'JavaTest.java',
     'JavaTestDescription.java',
     'Keystore.java',

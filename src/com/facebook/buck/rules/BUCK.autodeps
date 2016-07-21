@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 #@# GENERATED FILE: DO NOT MODIFY 447c4cdf33ec2a4b284f810fb2a02dc38c938342 #@#
+=======
+#@# GENERATED FILE: DO NOT MODIFY 99345be8444dcac22dd4b0da24e543b80d67e5be #@#
+>>>>>>> 4bb92a2... half baked attempt at adding documentation for sh_test
 {
   "action_graph_cache" : {
     "deps" : [
@@ -224,6 +228,7 @@
       "//src/com/facebook/buck/io:watchman",
       "//src/com/facebook/buck/json:json",
       "//src/com/facebook/buck/model:model",
+      "//src/com/facebook/buck/plugin:plugin",
       "//src/com/facebook/buck/rules:build_rule",
       "//src/com/facebook/buck/rules:interfaces",
       "//src/com/facebook/buck/util:io",

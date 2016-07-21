@@ -1,0 +1,10 @@
+java_library(
+  name = 'plugin',
+  srcs = [
+    'PluginManager.java',
+  ],
+  autodeps = True,
+  visibility = [
+    'PUBLIC',
+  ],
+)
