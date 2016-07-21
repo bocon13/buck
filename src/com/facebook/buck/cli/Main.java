@@ -65,6 +65,7 @@ import com.facebook.buck.model.BuckVersion;
 import com.facebook.buck.model.BuildId;
 import com.facebook.buck.parser.Parser;
 import com.facebook.buck.parser.ParserConfig;
+import com.facebook.buck.plugin.PluginManager;
 import com.facebook.buck.rules.ActionGraphCache;
 import com.facebook.buck.rules.Cell;
 import com.facebook.buck.rules.ConstructorArgMarshaller;
@@ -666,6 +667,10 @@ public final class Main {
         clientEnvironment,
         new DefaultCellPathResolver(filesystem.getRootPath(), config));
 
+    //FIXME BOC where do we want to do this exactly?
+    PluginConfig pluginConfig = new PluginConfig(buckConfig);
+    PluginManager pluginManager = new PluginManager(pluginConfig);
+
     // Setup the console.
     Verbosity verbosity = VerbosityParser.parse(args);
     Optional<String> color;
@@ -775,7 +780,8 @@ public final class Main {
         KnownBuildRuleTypesFactory factory = new KnownBuildRuleTypesFactory(
             processExecutor,
             androidDirectoryResolver,
-            testTempDirOverride);
+            testTempDirOverride,
+            pluginManager);
 
         Cell rootCell = Cell.createCell(
             filesystem,

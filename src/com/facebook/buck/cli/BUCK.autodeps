@@ -1,4 +1,4 @@
-#@# GENERATED FILE: DO NOT MODIFY ccdd6c2224264c55d98f50b7ac58ed026a5e5814 #@#
+#@# GENERATED FILE: DO NOT MODIFY 6470b331e21c818b292787b8e2961b893ed2b4fe #@#
 {
   "cli" : {
     "deps" : [
@@ -35,6 +35,7 @@
       "//src/com/facebook/buck/macho:macho",
       "//src/com/facebook/buck/maven:maven",
       "//src/com/facebook/buck/parser:config",
+      "//src/com/facebook/buck/plugin:plugin",
       "//src/com/facebook/buck/python:config",
       "//src/com/facebook/buck/rage:config",
       "//src/com/facebook/buck/rage:rage",

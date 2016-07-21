@@ -1,9 +1,8 @@
-#@# GENERATED FILE: DO NOT MODIFY 3bcf8078b85c38ef92d96599ed69513b1d722fd0 #@#
+#@# GENERATED FILE: DO NOT MODIFY 9c65a87bceef1a576fe35a12d96786dd902e220b #@#
 {
   "listener" : {
     "deps" : [
       "//src-gen:thrift",
-      "//src/com/facebook/buck/android:steps",
       "//src/com/facebook/buck/artifact_cache:artifact_cache",
       "//src/com/facebook/buck/cli:events",
       "//src/com/facebook/buck/counters:counters",
@@ -35,9 +34,7 @@
       "//src/com/facebook/buck/util:tristate",
       "//src/com/facebook/buck/util/concurrent:concurrent",
       "//src/com/facebook/buck/util/environment:environment",
-      "//src/com/facebook/buck/util/environment:platform",
       "//src/com/facebook/buck/util/network:network",
-      "//src/com/facebook/buck/util/versioncontrol:versioncontrol",
       "//test/com/facebook/buck/cli:FakeBuckConfig",
       "//test/com/facebook/buck/event:testutil",
       "//test/com/facebook/buck/event/listener:testutil",
@@ -48,8 +45,6 @@
       "//test/com/facebook/buck/testutil:testutil",
       "//test/com/facebook/buck/testutil/integration:integration",
       "//test/com/facebook/buck/timing:testutil",
-      "//test/com/facebook/buck/util/environment:testutil",
-      "//test/com/facebook/buck/util/network:testutil",
       "//third-party/java/easymock:easymock",
       "//third-party/java/gson:gson",
       "//third-party/java/guava:guava",

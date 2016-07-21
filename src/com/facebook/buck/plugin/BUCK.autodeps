@@ -1,0 +1,14 @@
+#@# GENERATED FILE: DO NOT MODIFY 34e9e7816567f2965a26157d2a62a071ac162f17 #@#
+{
+  "plugin" : {
+    "deps" : [
+      "//src/com/facebook/buck/cli/bootstrapper:bootstrapper_lib",
+      "//src/com/facebook/buck/log:api",
+      "//third-party/java/guava:guava"
+    ],
+    "exported_deps" : [
+      "//src/com/facebook/buck/cli:config",
+      "//src/com/facebook/buck/rules:build_rule"
+    ]
+  }
+}

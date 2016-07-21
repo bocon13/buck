@@ -19,6 +19,7 @@ package com.facebook.buck.rules;
 
 import com.facebook.buck.android.AndroidDirectoryResolver;
 import com.facebook.buck.cli.BuckConfig;
+import com.facebook.buck.plugin.PluginManager;
 import com.facebook.buck.util.ProcessExecutor;
 import com.google.common.base.Optional;
 
@@ -34,15 +35,17 @@ public class KnownBuildRuleTypesFactory {
   private final ProcessExecutor executor;
   private final AndroidDirectoryResolver directoryResolver;
   private final Optional<Path> testTempDirOverride;
+  private final PluginManager pluginManager;
 
   public KnownBuildRuleTypesFactory(
       ProcessExecutor executor,
       AndroidDirectoryResolver directoryResolver,
-      Optional<Path> testTempDirOverride) {
-
+      Optional<Path> testTempDirOverride,
+      PluginManager pluginManager) {
     this.executor = executor;
     this.directoryResolver = directoryResolver;
     this.testTempDirOverride = testTempDirOverride;
+    this.pluginManager = pluginManager;
   }
 
   public KnownBuildRuleTypes create(BuckConfig config) throws IOException, InterruptedException {
@@ -50,7 +53,8 @@ public class KnownBuildRuleTypesFactory {
         config,
         executor,
         directoryResolver,
-        testTempDirOverride);
+        testTempDirOverride,
+        pluginManager);
   }
 
 }
