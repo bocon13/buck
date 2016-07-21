@@ -19,6 +19,7 @@ package com.facebook.buck.rules;
 
 import com.facebook.buck.android.AndroidDirectoryResolver;
 import com.facebook.buck.cli.BuckConfig;
+import com.facebook.buck.plugin.PluginManager;
 import com.facebook.buck.util.ProcessExecutor;
 
 import java.io.IOException;
@@ -31,19 +32,23 @@ public class KnownBuildRuleTypesFactory {
 
   private final ProcessExecutor executor;
   private final AndroidDirectoryResolver directoryResolver;
+  private final PluginManager pluginManager;
 
   public KnownBuildRuleTypesFactory(
       ProcessExecutor executor,
-      AndroidDirectoryResolver directoryResolver) {
+      AndroidDirectoryResolver directoryResolver,
+      PluginManager pluginManager) {
     this.executor = executor;
     this.directoryResolver = directoryResolver;
+    this.pluginManager = pluginManager;
   }
 
   public KnownBuildRuleTypes create(BuckConfig config) throws IOException, InterruptedException {
     return KnownBuildRuleTypes.createInstance(
         config,
         executor,
-        directoryResolver);
+        directoryResolver,
+        pluginManager);
   }
 
 }

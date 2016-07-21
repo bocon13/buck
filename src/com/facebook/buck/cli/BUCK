@@ -15,6 +15,7 @@ CONFIG_SRCS = [
   'BuckConfig.java',
   'DownloadConfig.java',
   'ProjectTestsMode.java',
+  'PluginConfig.java',
   'SlbBuckConfig.java',
 ]
 java_library(

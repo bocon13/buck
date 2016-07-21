@@ -61,6 +61,7 @@ import com.facebook.buck.apple.XcodePrebuildScriptDescription;
 import com.facebook.buck.apple.XcodeWorkspaceConfigDescription;
 import com.facebook.buck.cli.BuckConfig;
 import com.facebook.buck.cli.DownloadConfig;
+import com.facebook.buck.plugin.PluginManager;
 import com.facebook.buck.cxx.CxxBinaryDescription;
 import com.facebook.buck.cxx.CxxBuckConfig;
 import com.facebook.buck.cxx.CxxGenruleDescription;
@@ -232,11 +233,13 @@ public class KnownBuildRuleTypes {
   public static KnownBuildRuleTypes createInstance(
       BuckConfig config,
       ProcessExecutor processExecutor,
-      AndroidDirectoryResolver androidDirectoryResolver) throws InterruptedException, IOException {
+      AndroidDirectoryResolver androidDirectoryResolver,
+      PluginManager pluginManager) throws InterruptedException, IOException {
     return createBuilder(
         config,
         processExecutor,
-        androidDirectoryResolver).build();
+        androidDirectoryResolver,
+        pluginManager).build();
   }
 
   private static ImmutableList<AppleCxxPlatform> buildAppleCxxPlatforms(
@@ -293,7 +296,8 @@ public class KnownBuildRuleTypes {
   static Builder createBuilder(
       BuckConfig config,
       ProcessExecutor processExecutor,
-      AndroidDirectoryResolver androidDirectoryResolver) throws InterruptedException, IOException {
+      AndroidDirectoryResolver androidDirectoryResolver,
+      PluginManager pluginManager) throws InterruptedException, IOException {
 
     Platform platform = Platform.detect();
 
@@ -765,6 +769,10 @@ public class KnownBuildRuleTypes {
     builder.setCxxPlatforms(cxxPlatforms);
     builder.setDefaultCxxPlatform(defaultCxxPlatform);
 
+    //FIXME BOC add all of types from the plugins
+    for(Description<?> description : pluginManager.buildDescriptions()) {
+      builder.register(description);
+    }
     return builder;
   }
 

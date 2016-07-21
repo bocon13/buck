@@ -1,4 +1,4 @@
-#@# GENERATED FILE: DO NOT MODIFY 76a00e989f9fb921f78ac74495112cf33b3e82fe #@#
+#@# GENERATED FILE: DO NOT MODIFY 59cb276826afcc63ac77e479d3f0da0b77b51d54 #@#
 {
   "cli" : {
     "deps" : [
@@ -36,6 +36,7 @@
       "//src/com/facebook/buck/macho:macho",
       "//src/com/facebook/buck/maven:maven",
       "//src/com/facebook/buck/parser:config",
+      "//src/com/facebook/buck/plugin:plugin",
       "//src/com/facebook/buck/python:config",
       "//src/com/facebook/buck/rage:config",
       "//src/com/facebook/buck/rage:rage",
@@ -58,7 +59,6 @@
       "//src/com/facebook/buck/util:watchman",
       "//src/com/facebook/buck/util/environment:env-filter",
       "//src/com/facebook/buck/util/network:network",
-      "//src/com/facebook/buck/util/network/offline:offline",
       "//src/com/facebook/buck/util/shutdown:shutdown",
       "//src/com/facebook/buck/util/versioncontrol:impl",
       "//src/com/facebook/buck/util/versioncontrol:versioncontrol",
