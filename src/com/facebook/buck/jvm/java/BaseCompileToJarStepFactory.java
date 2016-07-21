@@ -78,6 +78,9 @@ public abstract class BaseCompileToJarStepFactory implements CompileToJarStepFac
         steps,
         buildableContext);
 
+    // FIXME BOC: add mechanism to inject new Steps
+    //context.additionalStepFactory(JavaStep.class);
+
     steps.addAll(Lists.newCopyOnWriteArrayList(addPostprocessClassesCommands(
         filesystem.getRootPath(),
         postprocessClassesCommands,
