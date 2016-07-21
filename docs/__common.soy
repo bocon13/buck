@@ -190,6 +190,7 @@ src="https://www.facebook.com/tr?id=1637165926500152&ev=PageView&noscript=1"
             'genrule',
             'remote_file',
             'zip_file',
+            'sh_test',
         ],
         'cxx': [
             'cxx_binary',
@@ -685,6 +686,11 @@ src="https://www.facebook.com/tr?id=1637165926500152&ev=PageView&noscript=1"
 /***/
 {template .genrule}
 {call .ruleLink}{param name : 'genrule' /}{/call}
+{/template}
+
+/***/
+{template .sh_test}
+{call .ruleLink}{param name : 'sh_test' /}{/call}
 {/template}
 
 /***/

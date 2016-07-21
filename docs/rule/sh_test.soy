@@ -1,0 +1,147 @@
+{namespace sh_test}
+
+/***/
+{template .soyweb}
+  {call buck.page}
+    {param title: 'sh_test()' /}
+    {param prettify: true /}
+    {param description}
+      FIXME A rule that is used to generate files from a shell command. It must
+      produce a single output file or folder.
+    {/param}
+    {param content}
+
+    {call buck.rule}
+    {param status: 'FROZEN' /}
+    {param overview}
+      FIXME A <code>sh_rule()</code> is used to generate files from a shell
+      command. It must produce a single output file or folder.
+    {/param}
+
+    {param args}
+
+    {call buck.arg}
+      {param name: 'name' /}
+      {param desc}
+      The name of the sh_test.
+      {/param}
+    {/call}
+
+    {call buck.arg}
+      {param name: 'test' /}
+      {param desc}
+      The {call buck.build_rule /} that should be tested.
+      {/param}
+    {/call}
+
+    public Optional<ImmutableList<String>> args;
+    public Optional<ImmutableSortedSet<Label>> labels;
+    public Optional<Long> testRuleTimeoutMs;
+    public Optional<ImmutableSortedSet<BuildTarget>> deps;
+    public Optional<ImmutableSortedSet<Path>> resources;
+    public Optional<ImmutableMap<String, String>> env;
+    public Optional<ImmutableSet<SourcePath>> licenses;
+
+
+
+    {call buck.arg}
+      {param name: 'args' /}
+      {param default : '[]' /}
+      {param desc}
+        Runtime arguments passed to the shell script.
+      {/param}
+    {/call}
+
+    {call buck.test_label_arg /}
+
+    {call buck.arg}
+      {param name: 'test_rule_timeout_ms' /}
+      {param default : '???' /}
+      {param desc}
+        Time limit for the execution of the test in milliseconds.
+      {/param}
+    {/call}
+
+    {call buck.arg}
+      {param name: 'deps' /}
+      {param default : '[]' /}
+      {param desc}
+      FIXME Rules (usually other <code>java_library</code> rules) that are used to
+      generate the classpath required to compile this <code>java_library</code>.
+      {/param}
+    {/call}
+
+    {call buck.arg}
+      {param name: 'resources' /}
+      {param default : '[]' /}
+      {param desc}
+      FIXME Static files to include among the compiled <code>.class</code>
+      {sp}files. These files can be loaded via <a
+      href="http://docs.oracle.com/javase/7/docs/api/java/lang/Class.html#getResource(java.lang.String)"
+      target="_blank">Class.getResource()</a>.
+      <p>
+      <strong>Note:</strong> If <code>resources_root</code> isn't set, Buck uses
+      the <code>src_roots</code> property in <a
+      href="{ROOT}concept/buckconfig.html"><code>.buckconfig</code></a> to help
+      determine where resources should be placed within the generated JAR file.
+      <p>
+      {/param}
+    {/call}
+
+    {call buck.arg}
+      {param name: 'env' /}
+      {param default : '[]' /}
+      {param desc}
+      FIXME Static files to include among the compiled <code>.class</code>
+      {sp}files. These files can be loaded via <a
+      href="http://docs.oracle.com/javase/7/docs/api/java/lang/Class.html#getResource(java.lang.String)"
+      target="_blank">Class.getResource()</a>.
+      <p>
+      <strong>Note:</strong> If <code>resources_root</code> isn't set, Buck uses
+      the <code>src_roots</code> property in <a
+      href="{ROOT}concept/buckconfig.html"><code>.buckconfig</code></a> to help
+      determine where resources should be placed within the generated JAR file.
+      <p>
+      {/param}
+    {/call}
+
+    {call buck.licenses_arg /}
+
+    {/param} // args
+
+    {param examples}
+
+    This genrule() uses a Python script to derive a new
+    {sp}<code>AndroidManifest.xml</code> from an
+    {sp}<code>AndroidManifest.xml</code> in the source tree.
+
+    {literal}<pre class="prettyprint lang-py">
+sh_test(
+  name = 'generate_manifest',
+  srcs = [
+    'AndroidManifest.xml',
+  ],
+  bash = 'python $(exe //python/android:basic_to_full) ' \
+      '$SRCDIR/AndroidManifest.xml > $OUT',
+  cmd_exe = 'python.exe $(exe //python/android:basic_to_full) ' \
+      '%SRCDIR%\\AndroidManifest.xml > %OUT%',
+  out = 'AndroidManifest.xml',
+)
+
+    public SourcePath test;
+    public Optional<ImmutableList<String>> args;
+    public Optional<ImmutableSortedSet<Label>> labels;
+    public Optional<Long> testRuleTimeoutMs;
+    public Optional<ImmutableSortedSet<BuildTarget>> deps;
+    public Optional<ImmutableSortedSet<Path>> resources;
+    public Optional<ImmutableMap<String, String>> env;
+    public Optional<ImmutableSet<SourcePath>> licenses;
+
+</pre>{/literal}
+
+    {/param} // examples
+
+    {/call} // buck.rule
+    {/param}
+  {/call} // buck.page
+{/template}
