@@ -1,5 +1,6 @@
 package com.facebook.buck.plugin;
 
+import com.facebook.buck.cli.BuckConfig;
 import com.facebook.buck.cli.PluginConfig;
 import com.facebook.buck.cli.bootstrapper.ClassLoaderBootstrapper;
 import com.facebook.buck.log.Logger;
@@ -11,6 +12,8 @@ import com.google.common.collect.Sets;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -21,7 +24,10 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 /**
- * Created by bocon on 7/20/16.
+ * Plugin manager responsible for loading plugins from jar files.
+ *
+ * The manager currently allows for the introduction of new build rule types, through the
+ * introduction of Description types.
  */
 public class PluginManager {
   private static final Logger LOG = Logger.get(PluginManager.class);
@@ -102,12 +108,32 @@ public class PluginManager {
     ImmutableSet.Builder<Description<?>> descriptionBuilder = ImmutableSet.builder();
     for(Class<? extends Description<?>> clazz : descriptionClasses) {
       try {
-        descriptionBuilder.add(clazz.newInstance());
+        try {
+          Constructor<? extends Description<?>> constructor = clazz.getConstructor(BuckConfig.class);
+          descriptionBuilder.add(constructor.newInstance(config.getDelegate()));
+        } catch (NoSuchMethodException | InvocationTargetException e) {
+          // fallback to no arg constructor
+          descriptionBuilder.add(clazz.newInstance());
+        }
       } catch (InstantiationException | IllegalAccessException e) {
         LOG.error("Failed to instantiate rule description: %s", clazz.getName());
       }
     }
     return descriptionBuilder.build();
   }
+
+  // this is a WIP to add a field to the rule key that contains a version hash
+//  private void injectAdditionalBuildRule(Class<? extends Description<?>> descriptionClass) {
+//    try {
+//      descriptionClass.newInstance().createBuildRule().getClass();
+//      descriptionClass.getMethod()
+//    } catch (NoSuchBuildTargetException e) {
+//      e.printStackTrace();
+//    } catch (InstantiationException e) {
+//      e.printStackTrace();
+//    } catch (IllegalAccessException e) {
+//      e.printStackTrace();
+//    }
+//  }
 
 }

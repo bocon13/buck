@@ -4,9 +4,6 @@ import com.google.common.base.Optional;
 
 import java.nio.file.Path;
 
-/**
- * Created by bocon on 7/20/16.
- */
 public class PluginConfig {
 
   private final BuckConfig delegate;
@@ -23,6 +20,10 @@ public class PluginConfig {
     } catch (Exception e) {
       return Optional.absent();
     }
+  }
+
+  public BuckConfig getDelegate() {
+    return delegate;
   }
 
 }
