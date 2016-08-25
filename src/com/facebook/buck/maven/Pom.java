@@ -31,6 +31,7 @@ import com.google.common.collect.Maps;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.Parent;
 import org.apache.maven.model.building.DefaultModelBuilderFactory;
 import org.apache.maven.model.building.DefaultModelBuildingRequest;
 import org.apache.maven.model.building.ModelBuilder;
@@ -129,6 +130,11 @@ public class Pom {
         return Preconditions.checkNotNull(modelBuildingResult.getRawModel());
       } catch (ModelBuildingException e) {
         throw new RuntimeException(e);
+      } catch (IllegalArgumentException e) {
+        //FIXME
+        Model model = new Model();
+        model.setModelVersion(POM_MODEL_VERSION);
+        return model;
       }
     } else {
       Model model = new Model();
@@ -141,6 +147,25 @@ public class Pom {
     model.setGroupId(mavenCoordinates.getGroupId());
     model.setArtifactId(mavenCoordinates.getArtifactId());
     model.setVersion(mavenCoordinates.getVersion());
+
+    Parent pom = new Parent();
+    pom.setGroupId("org.onosproject");
+    pom.setArtifactId("onos-base");
+    pom.setVersion("1");
+    model.setParent(pom);
+//    model.setUrl("https://url.com");
+//    Developer dev = new Developer();
+//    dev.setName("foo");
+//    dev.setEmail("bar@baz.net");
+//    model.setDevelopers(Lists.newArrayList(dev));
+//    Scm scm = new Scm();
+//    scm.setUrl("https://scm.com");
+//    model.setScm(scm);
+//    License license = new License();
+//    license.setUrl("http://license.com");
+//    model.setLicenses(Lists.newArrayList(license));
+//    model.setDescription("this is a cool project");
+
     if (Strings.isNullOrEmpty(model.getName())) {
       model.setName(mavenCoordinates.getArtifactId()); // better than nothing
     }

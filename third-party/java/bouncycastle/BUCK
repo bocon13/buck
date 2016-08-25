@@ -1,0 +1,19 @@
+# Retrieved from https://www.bouncycastle.org/latest_releases.html
+prebuilt_jar(
+  name = 'bcpg',
+  binary_jar = 'bcpg-jdk15on-155.jar',
+  deps = [ ':bcprov' ],
+  licenses = [
+    'LICENSE',
+  ],
+  visibility = ['PUBLIC'],
+)
+
+prebuilt_jar(
+  name = 'bcprov',
+  binary_jar = 'bcprov-jdk15on-155.jar',
+  licenses = [
+    'LICENSE',
+  ],
+  visibility = ['PUBLIC'],
+)

@@ -71,6 +71,7 @@ public class Publisher {
   private final LocalRepository localRepo;
   private final RemoteRepository remoteRepo;
   private final boolean dryRun;
+  private final boolean signArtifacts;
 
   public Publisher(
       ProjectFilesystem repositoryFilesystem,
@@ -79,21 +80,45 @@ public class Publisher {
     this(repositoryFilesystem.getRootPath(), remoteRepoUrl, dryRun);
   }
 
+  public Publisher(
+      ProjectFilesystem repositoryFilesystem,
+      Optional<URL> remoteRepoUrl,
+      boolean dryRun,
+      boolean signArtifacts) {
+    this(repositoryFilesystem.getRootPath(), remoteRepoUrl, dryRun, signArtifacts);
+  }
+
+  public Publisher(
+      Path localRepoPath,
+      Optional<URL> remoteRepoUrl,
+      boolean dryRun) {
+    this(localRepoPath, remoteRepoUrl, dryRun, false);
+  }
+
   /**
    * @param localRepoPath Typically obtained as
    *                      {@link com.facebook.buck.io.ProjectFilesystem#getRootPath}
    * @param remoteRepoUrl Canonically {@link #MAVEN_CENTRAL_URL}
    * @param dryRun if true, a dummy {@link DeployResult} will be returned, with the fully
    *               constructed {@link DeployRequest}. No actual publishing will happen
+   * @param signArtifacts FIXME
    */
   public Publisher(
       Path localRepoPath,
       Optional<URL> remoteRepoUrl,
-      boolean dryRun) {
+      boolean dryRun,
+      boolean signArtifacts) {
     this.localRepo = new LocalRepository(localRepoPath.toFile());
-    this.remoteRepo = AetherUtil.toRemoteRepository(remoteRepoUrl.or(MAVEN_CENTRAL));
+    ArtifactConfig.Repository repo = new ArtifactConfig.Repository();
+    repo.url = "https://oss.sonatype.org/service/local/staging/deploy/maven2/";
+    remoteRepoUrl.or(MAVEN_CENTRAL).toString();
+
+    repo.user = "TODO";
+    repo.password = "TODO";
+    this.remoteRepo = AetherUtil.toRemoteRepository(repo);
     this.locator = AetherUtil.initServiceLocator();
     this.dryRun = dryRun;
+    this.signArtifacts = signArtifacts;
   }
 
   public ImmutableSet<DeployResult> publish(
@@ -137,15 +162,18 @@ public class Publisher {
           .resolve(relativePathToOutput)
           .toFile();
 
-      if (!coords.getClassifier().isEmpty()) {
-        deployResultBuilder.add(publish(coords, ImmutableList.of(mainItem)));
-      }
 
       try {
-        // If this is the "main" artifact (denoted by lack of classifier) generate and publish
-        // pom alongside
-        File pom = Pom.generatePomFile(publishable).toFile();
-        deployResultBuilder.add(publish(coords, ImmutableList.of(mainItem, pom)));
+        if (coords.getClassifier().isEmpty()) {
+          // If this is the "main" artifact (denoted by lack of classifier) generate and publish
+          // pom alongside
+          File pom = Pom.generatePomFile(publishable).toFile();
+          deployResultBuilder.add(publish(coords, ImmutableList.of(mainItem, pom)));
+
+        } else {
+          // Otherwise, just publish the auxiliary artifact (e.g. -sources, -tests, -javadoc)
+          deployResultBuilder.add(publish(coords, ImmutableList.of(mainItem)));
+        }
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -227,6 +255,15 @@ public class Publisher {
           descriptor.getClassifier(),
           Files.getFileExtension(file.getAbsolutePath()),
           file));
+
+      if (signArtifacts) {
+        artifacts.add(new SubArtifact(
+            descriptor,
+            descriptor.getClassifier(),
+            Files.getFileExtension(file.getAbsolutePath()) + ".asc",
+            new Signer(file).getSignatureFile()
+        ));
+      }
     }
     return publish(artifacts);
   }
@@ -252,6 +289,7 @@ public class Publisher {
           .setMetadata(deployRequest.getMetadata());
     } else {
       return repoSys.deploy(session, deployRequest);
+
     }
   }
 

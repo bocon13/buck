@@ -53,7 +53,8 @@ public class JavaLibraryDescription implements Description<JavaLibraryDescriptio
   public static final BuildRuleType TYPE = BuildRuleType.of("java_library");
   public static final ImmutableSet<Flavor> SUPPORTED_FLAVORS = ImmutableSet.of(
       JavaLibrary.SRC_JAR,
-      JavaLibrary.MAVEN_JAR);
+      JavaLibrary.MAVEN_JAR,
+      JavaLibrary.JAVADOC_JAR);
 
   @VisibleForTesting
   final JavacOptions defaultOptions;
@@ -122,6 +123,23 @@ public class JavaLibraryDescription implements Description<JavaLibraryDescriptio
             args.srcs.get(),
             args.mavenCoords);
       }
+    }
+
+    if (flavors.contains(JavaLibrary.JAVADOC_JAR)) {
+      args.mavenCoords = args.mavenCoords.transform(
+          new Function<String, String>() {
+            @Override
+            public String apply(String input) {
+              return AetherUtil.addClassifier(input, AetherUtil.CLASSIFIER_JAVADOC);
+            }
+          });
+
+      return new JavadocJar(
+          params,
+          pathResolver,
+          args.srcs.get(),
+          args.mavenCoords
+      );
     }
 
     JavacOptions javacOptions = JavacOptionsFactory.create(

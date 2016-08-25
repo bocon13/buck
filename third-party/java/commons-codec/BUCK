@@ -7,6 +7,7 @@ prebuilt_jar(
   ],
   visibility = [
     '//third-party/java/httpcomponents:httpclient',
+    'PUBLIC'
   ],
 )
 

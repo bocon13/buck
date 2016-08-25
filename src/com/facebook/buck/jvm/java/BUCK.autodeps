@@ -1,4 +1,4 @@
-#@# GENERATED FILE: DO NOT MODIFY 05f280554bf43d308f03988a66e89ddc9ad8c47f #@#
+#@# GENERATED FILE: DO NOT MODIFY d627e369ce3acb81dffa52d03acb439eca287f6d #@#
 {
   "autodeps" : {
     "deps" : [
@@ -88,6 +88,7 @@
       "//src/com/facebook/buck/rules:interfaces",
       "//src/com/facebook/buck/rules:rules",
       "//src/com/facebook/buck/rules/keys:keys",
+      "//src/com/facebook/buck/shell:steps",
       "//src/com/facebook/buck/step:step",
       "//src/com/facebook/buck/test:test",
       "//third-party/java/guava:guava",
