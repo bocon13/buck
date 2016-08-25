@@ -16,6 +16,7 @@
 
 package com.facebook.buck.jvm.java;
 
+import com.facebook.buck.model.BuildTarget;
 import com.facebook.buck.rules.AbstractBuildRule;
 import com.facebook.buck.rules.BuildContext;
 import com.facebook.buck.rules.BuildRule;
@@ -50,16 +51,19 @@ import javax.annotation.Nullable;
 public class MavenUberJar extends AbstractBuildRule implements MavenPublishable {
 
   private final Optional<String> mavenCoords;
+  private final ImmutableSortedSet<BuildTarget> tests;
   private final TraversedDeps traversedDeps;
 
   private MavenUberJar(
       TraversedDeps traversedDeps,
       BuildRuleParams params,
       SourcePathResolver resolver,
-      Optional<String> mavenCoords) {
+      Optional<String> mavenCoords,
+      ImmutableSortedSet<BuildTarget> tests) {
     super(params, resolver);
     this.traversedDeps = traversedDeps;
     this.mavenCoords = mavenCoords;
+    this.tests = tests;
   }
 
   private static BuildRuleParams adjustParams(BuildRuleParams params, TraversedDeps traversedDeps) {
@@ -81,13 +85,15 @@ public class MavenUberJar extends AbstractBuildRule implements MavenPublishable 
       JavaLibrary rootRule,
       BuildRuleParams params,
       SourcePathResolver resolver,
-      Optional<String> mavenCoords) {
+      Optional<String> mavenCoords,
+      ImmutableSortedSet<BuildTarget> tests) {
     TraversedDeps traversedDeps = TraversedDeps.traverse(ImmutableSet.of(rootRule));
     return new MavenUberJar(
         traversedDeps,
         adjustParams(params, traversedDeps),
         resolver,
-        mavenCoords);
+        mavenCoords,
+        tests);
   }
 
   @Override
@@ -143,6 +149,21 @@ public class MavenUberJar extends AbstractBuildRule implements MavenPublishable 
     return traversedDeps.packagedDeps;
   }
 
+  @Override
+  public boolean hasTest() {
+    return !tests.isEmpty();
+  }
+
+  @Override
+  public BuildTarget getTest() {
+    return tests.first(); //FIXME
+  }
+
+  //FIXME
+  public ImmutableSortedSet<BuildTarget> getTests() {
+    return tests;
+  };
+
   public static class SourceJar extends JavaSourceJar implements MavenPublishable {
 
     private final TraversedDeps traversedDeps;
@@ -195,6 +216,16 @@ public class MavenUberJar extends AbstractBuildRule implements MavenPublishable 
     @Override
     public Iterable<BuildRule> getPackagedDependencies() {
       return traversedDeps.packagedDeps;
+    }
+
+    @Override
+    public boolean hasTest() {
+      return false;
+    }
+
+    @Override
+    public BuildTarget getTest() {
+      return null; //FIXME
     }
   }
 
