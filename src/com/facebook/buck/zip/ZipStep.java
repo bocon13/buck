@@ -69,6 +69,7 @@ public class ZipStep implements Step {
    * an archive containing just the file. If you were in {@code /} and added
    * {@code dir/file.txt}, you would get an archive containing the file within a directory.
    *
+   * @param filesystem filesystem
    * @param pathToZipFile path to archive to create, relative to project root.
    * @param paths a set of files to work on. The entire working directory is assumed if this set
    *    is empty.
