@@ -51,6 +51,7 @@ public class PublishCommand extends BuildCommand {
   public static final String INCLUDE_SOURCE_LONG_ARG = "--include-source";
   public static final String INCLUDE_SOURCE_SHORT_ARG = "-s";
   public static final String INCLUDE_JAVADOC_LONG_ARG = "--include-javadoc";
+  public static final String INCLUDE_TESTS_LONG_ARG = "--include-tests";
   public static final String TO_MAVEN_CENTRAL_LONG_ARG = "--to-maven-central";
   public static final String DRY_RUN_LONG_ARG = "--dry-run";
   public static final String SIGN_LONG_ARG = "--sign";
@@ -77,6 +78,11 @@ public class PublishCommand extends BuildCommand {
       name = INCLUDE_JAVADOC_LONG_ARG,
       usage = "Publish javadoc as well")
   private boolean includeJavadoc = false;
+
+  @Option(
+      name = INCLUDE_TESTS_LONG_ARG,
+      usage = "Publish tests jar as well")
+  private boolean includeTests = false;
 
   @Option(
       name = DRY_RUN_LONG_ARG,
@@ -141,6 +147,19 @@ public class PublishCommand extends BuildCommand {
         continue;
       }
       publishables.add(publishable);
+
+//      if (includeTests && publishable.hasTest()) {
+//        BuildTarget tests = publishable.getTest();
+//        try {
+//          buildRule = getBuild().getRuleResolver().requireRule(tests);
+//        } catch (NoSuchBuildTargetException e) {
+//          // This doesn't seem physically possible!
+//          Throwables.propagate(e);
+//        }      Preconditions.checkNotNull(buildRule);
+//        Preconditions.checkNotNull(buildRule);
+//
+//        //JavaTest test = (JavaTest) buildRule;
+//      }
     }
 
     Publisher publisher = new Publisher(
