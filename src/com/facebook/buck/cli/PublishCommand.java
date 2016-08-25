@@ -50,8 +50,10 @@ public class PublishCommand extends BuildCommand {
   public static final String REMOTE_REPO_SHORT_ARG = "-r";
   public static final String INCLUDE_SOURCE_LONG_ARG = "--include-source";
   public static final String INCLUDE_SOURCE_SHORT_ARG = "-s";
+  public static final String INCLUDE_JAVADOC_LONG_ARG = "--include-javadoc";
   public static final String TO_MAVEN_CENTRAL_LONG_ARG = "--to-maven-central";
   public static final String DRY_RUN_LONG_ARG = "--dry-run";
+  public static final String SIGN_LONG_ARG = "--sign";
 
   @Option(
       name = REMOTE_REPO_LONG_ARG,
@@ -72,9 +74,19 @@ public class PublishCommand extends BuildCommand {
   private boolean includeSource = false;
 
   @Option(
+      name = INCLUDE_JAVADOC_LONG_ARG,
+      usage = "Publish javadoc as well")
+  private boolean includeJavadoc = false;
+
+  @Option(
       name = DRY_RUN_LONG_ARG,
       usage = "Just print the artifacts to be published")
   private boolean dryRun = false;
+
+  @Option(
+      name = SIGN_LONG_ARG,
+      usage = "Sign the artifacts")
+  private boolean signArtifacts = false;
 
   @Override
   public int runWithoutHelp(CommandRunnerParams params) throws IOException, InterruptedException {
@@ -134,7 +146,8 @@ public class PublishCommand extends BuildCommand {
     Publisher publisher = new Publisher(
         params.getCell().getFilesystem(),
         Optional.fromNullable(remoteRepo),
-        dryRun);
+        dryRun,
+        signArtifacts);
 
     try {
       ImmutableSet<DeployResult> deployResults = publisher.publish(publishables.build());
@@ -177,10 +190,11 @@ public class PublishCommand extends BuildCommand {
         config,
         targetsAsArgs);
 
+    ImmutableList.Builder<TargetNodeSpec> builder = ImmutableList.<TargetNodeSpec>builder()
+                                                                 .addAll(specs);
+
     if (includeSource) {
-      specs = ImmutableList.<TargetNodeSpec>builder()
-          .addAll(specs)
-          .addAll(FluentIterable
+      builder.addAll(FluentIterable
               .from(specs)
               .filter(
                   new Predicate<TargetNodeSpec>() {
@@ -207,13 +221,46 @@ public class PublishCommand extends BuildCommand {
                               .withFlavors(JavaLibrary.SRC_JAR),
                           input.getBuildFileSpec());
                     }
-                  }))
-          .build();
+                  }));
     }
 
+    //FIXME refactor this to be same as above
+    if (includeJavadoc) {
+      builder.addAll(FluentIterable
+              .from(specs)
+              .filter(
+                  new Predicate<TargetNodeSpec>() {
+                    @Override
+                    public boolean apply(TargetNodeSpec input) {
+                      if (!(input instanceof BuildTargetSpec)) {
+                        throw new IllegalArgumentException(
+                            "Targets must be explicitly defined when using " +
+                                INCLUDE_JAVADOC_LONG_ARG);
+                      }
+                      return !((BuildTargetSpec) input)
+                          .getBuildTarget()
+                          .getFlavors()
+                          .contains(JavaLibrary.JAVADOC_JAR);
+                    }
+                  })
+              .transform(
+                  new Function<TargetNodeSpec, BuildTargetSpec>() {
+                    @Override
+                    public BuildTargetSpec apply(TargetNodeSpec input) {
+                      return BuildTargetSpec.of(
+                          ((BuildTargetSpec) input)
+                              .getBuildTarget()
+                              .withFlavors(JavaLibrary.JAVADOC_JAR),
+                          input.getBuildFileSpec());
+                    }
+                  }));
+    }
+
+
+    //FIXME we may be able to refactor this
     // Append "maven" flavor
     specs = FluentIterable
-        .from(specs)
+        .from(builder.build())
         .transform(
             new Function<TargetNodeSpec, TargetNodeSpec>() {
               @Nullable

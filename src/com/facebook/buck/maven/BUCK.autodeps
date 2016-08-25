@@ -1,4 +1,4 @@
-#@# GENERATED FILE: DO NOT MODIFY be45b4d6cb19cedb8336ff9ffe598158f9667df2 #@#
+#@# GENERATED FILE: DO NOT MODIFY b0f4b53df6b659df703d14115cbc3f6981fa6a57 #@#
 {
   "maven" : {
     "deps" : [
@@ -30,6 +30,8 @@
       "//third-party/java/aether:aether-impl",
       "//third-party/java/aether:aether-transport-http",
       "//third-party/java/aether:aether-util",
+      "//third-party/java/bouncycastle:bcpg",
+      "//third-party/java/bouncycastle:bcprov",
       "//third-party/java/jackson:jackson-databind",
       "//third-party/java/maven:maven-aether-provider",
       "//third-party/java/slf4j:slf4j-api"

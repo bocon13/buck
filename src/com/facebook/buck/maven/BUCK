@@ -1,6 +1,7 @@
 UTIL_SRCS = [
   'AetherUtil.java',
   'ArtifactConfig.java',
+  'Signer.java',
 ]
 
 java_library(
