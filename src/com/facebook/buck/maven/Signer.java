@@ -38,7 +38,7 @@ public class Signer {
     Security.addProvider(new BouncyCastleProvider());
   }
 
-  //FIXME perhaps introduce a builder pattern here
+  //FIXME perhaps introduce a builder pattern here to construct these objects
   private final String keyring = "TODO";
   private final String password = "TODO";
   private final File input;

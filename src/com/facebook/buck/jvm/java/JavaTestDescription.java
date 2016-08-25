@@ -22,6 +22,8 @@ import com.facebook.buck.cxx.CxxPlatforms;
 import com.facebook.buck.cxx.NativeLinkable;
 import com.facebook.buck.jvm.common.ResourceValidator;
 import com.facebook.buck.model.BuildTarget;
+import com.facebook.buck.model.Flavor;
+import com.facebook.buck.model.Flavored;
 import com.facebook.buck.parser.NoSuchBuildTargetException;
 import com.facebook.buck.rules.BuildRule;
 import com.facebook.buck.rules.BuildRuleParams;
@@ -39,6 +41,7 @@ import com.facebook.buck.rules.SymlinkTree;
 import com.facebook.buck.rules.TargetGraph;
 import com.facebook.infer.annotation.SuppressFieldNotInitialized;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -51,9 +54,13 @@ import java.util.logging.Level;
 
 public class JavaTestDescription implements
     Description<JavaTestDescription.Arg>,
-    ImplicitDepsInferringDescription<JavaTestDescription.Arg> {
+    ImplicitDepsInferringDescription<JavaTestDescription.Arg> ,
+    Flavored {
 
   public static final BuildRuleType TYPE = BuildRuleType.of("java_test");
+  public static final ImmutableSet<Flavor> SUPPORTED_FLAVORS = ImmutableSet.of(
+      JavaLibrary.MAVEN_JAR);
+
 
   private final JavaOptions javaOptions;
   private final JavacOptions templateJavacOptions;
@@ -82,12 +89,27 @@ public class JavaTestDescription implements
   }
 
   @Override
-  public <A extends Arg> JavaTest createBuildRule(
+  public <A extends Arg> BuildRule createBuildRule(
       TargetGraph targetGraph,
       BuildRuleParams params,
       BuildRuleResolver resolver,
       A args) throws NoSuchBuildTargetException {
     SourcePathResolver pathResolver = new SourcePathResolver(resolver);
+    BuildTarget target = params.getBuildTarget();
+
+    // We know that the flavour we're being asked to create is valid, since the check is done when
+    // creating the action graph from the target graph.
+
+    ImmutableSortedSet<Flavor> flavors = target.getFlavors();
+    BuildRuleParams paramsWithMavenFlavor = null;
+    if (flavors.contains(JavaLibrary.MAVEN_JAR)) {
+      paramsWithMavenFlavor = params;
+
+      // Maven rules will depend upon their vanilla versions, so the latter have to be constructed
+      // without the maven flavor to prevent output-path conflict
+      params = params.copyWithBuildTarget(
+          params.getBuildTarget().withoutFlavors(ImmutableSet.of(JavaLibrary.MAVEN_JAR)));
+    }
 
     JavacOptions javacOptions =
         JavacOptionsFactory.create(
@@ -153,7 +175,18 @@ public class JavaTestDescription implements
             params,
             new BuildTargetSourcePath(test.getBuildTarget())));
 
+
+    //FIXME verify that classifier is tests
+    if (flavors.contains(JavaLibrary.MAVEN_JAR)) {
+      return MavenUberJar.create(
+          test,
+          Preconditions.checkNotNull(paramsWithMavenFlavor),
+          pathResolver,
+          args.mavenCoords,
+          args.tests.get());
+    }
     return test;
+
   }
 
   @Override
@@ -166,6 +199,11 @@ public class JavaTestDescription implements
       deps.addAll(CxxPlatforms.getParseTimeDeps(cxxPlatform));
     }
     return deps.build();
+  }
+
+  @Override
+  public boolean hasFlavors(ImmutableSet<Flavor> flavors) {
+    return SUPPORTED_FLAVORS.containsAll(flavors);
   }
 
   @SuppressFieldNotInitialized

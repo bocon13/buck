@@ -134,6 +134,17 @@ public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates
     return ImmutableList.of();
   }
 
+  @Override
+  public boolean hasTest() {
+    return false;
+  }
+
+  @Override
+  public BuildTarget getTest() {
+    //FIXME
+    return null;
+  }
+
 
   private static class JavadocStep extends ShellStep {
 
