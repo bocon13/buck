@@ -1,8 +1,9 @@
-#@# GENERATED FILE: DO NOT MODIFY 93d73429a858f14e893a027916d967c6dd4c1b97 #@#
+#@# GENERATED FILE: DO NOT MODIFY 48a87f218f030217569e3da17eca5f75338f8d5e #@#
 {
   "memory" : {
     "deps" : [
-      "//src/com/facebook/buck/log:api"
+      "//src/com/facebook/buck/log:api",
+      "//src/com/facebook/buck/log:log"
     ],
     "exported_deps" : [
       "//third-party/java/guava:guava"
