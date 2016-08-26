@@ -39,14 +39,16 @@ public class Signer {
   }
 
   //FIXME perhaps introduce a builder pattern here to construct these objects
-  private final String keyring = "TODO";
-  private final String password = "TODO";
+  private final String keyring;
+  private final String password;
   private final File input;
 
   private File output;
   private boolean signed;
 
-  public Signer(File input) {
+  public Signer(String keyring, String password, File input) {
+    this.keyring = keyring;
+    this.password = password;
     this.input = input;
   }
 
