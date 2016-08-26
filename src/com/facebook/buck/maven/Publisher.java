@@ -16,6 +16,8 @@
 
 package com.facebook.buck.maven;
 
+import com.facebook.buck.cli.BuckConfig;
+import com.facebook.buck.cli.PublishConfig;
 import com.facebook.buck.io.ProjectFilesystem;
 import com.facebook.buck.jvm.java.MavenPublishable;
 import com.facebook.buck.log.Logger;
@@ -48,6 +50,7 @@ import org.eclipse.aether.util.artifact.SubArtifact;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.PasswordAuthentication;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -72,6 +75,7 @@ public class Publisher {
   private final RemoteRepository remoteRepo;
   private final boolean dryRun;
   private final boolean signArtifacts;
+  private final PublishConfig config;
 
   public Publisher(
       ProjectFilesystem repositoryFilesystem,
@@ -83,16 +87,17 @@ public class Publisher {
   public Publisher(
       ProjectFilesystem repositoryFilesystem,
       Optional<URL> remoteRepoUrl,
+      BuckConfig config,
       boolean dryRun,
       boolean signArtifacts) {
-    this(repositoryFilesystem.getRootPath(), remoteRepoUrl, dryRun, signArtifacts);
+    this(repositoryFilesystem.getRootPath(), remoteRepoUrl, config, dryRun, signArtifacts);
   }
 
   public Publisher(
       Path localRepoPath,
       Optional<URL> remoteRepoUrl,
       boolean dryRun) {
-    this(localRepoPath, remoteRepoUrl, dryRun, false);
+    this(localRepoPath, remoteRepoUrl, null, dryRun, false);
   }
 
   /**
@@ -106,19 +111,27 @@ public class Publisher {
   public Publisher(
       Path localRepoPath,
       Optional<URL> remoteRepoUrl,
+      BuckConfig config,
       boolean dryRun,
       boolean signArtifacts) {
-    this.localRepo = new LocalRepository(localRepoPath.toFile());
-    ArtifactConfig.Repository repo = new ArtifactConfig.Repository();
-    repo.url = "https://oss.sonatype.org/service/local/staging/deploy/maven2/";
-    remoteRepoUrl.or(MAVEN_CENTRAL).toString();
 
-    repo.user = "TODO";
-    repo.password = "TODO";
-    this.remoteRepo = AetherUtil.toRemoteRepository(repo);
-    this.locator = AetherUtil.initServiceLocator();
+    //FIXME careful about config NPE
+    this.config = new PublishConfig(config);
     this.dryRun = dryRun;
     this.signArtifacts = signArtifacts;
+
+    this.localRepo = new LocalRepository(localRepoPath.toFile());
+
+    ArtifactConfig.Repository repo = new ArtifactConfig.Repository();
+    repo.url = remoteRepoUrl.or(this.config.getPublishRepoUrl()).or(MAVEN_CENTRAL).toString();
+    Optional<PasswordAuthentication> authentication = this.config.getRepoCredentials();
+    if (authentication.isPresent()) {
+      repo.user = authentication.get().getUserName();
+      repo.password = new String(authentication.get().getPassword());
+    }
+    this.remoteRepo = AetherUtil.toRemoteRepository(repo);
+
+    this.locator = AetherUtil.initServiceLocator();
   }
 
   public ImmutableSet<DeployResult> publish(
@@ -270,7 +283,7 @@ public class Publisher {
             descriptor,
             descriptor.getClassifier(),
             Files.getFileExtension(file.getAbsolutePath()) + ".asc",
-            new Signer(file).getSignatureFile()
+            new Signer(config.getPpgKeyring().get(), new String(config.getPgpPassword()), file).getSignatureFile()
         ));
       }
     }

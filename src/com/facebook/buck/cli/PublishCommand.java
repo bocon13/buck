@@ -94,6 +94,8 @@ public class PublishCommand extends BuildCommand {
       usage = "Sign the artifacts")
   private boolean signArtifacts = false;
 
+  private BuckConfig config;
+
   @Override
   public int runWithoutHelp(CommandRunnerParams params) throws IOException, InterruptedException {
 
@@ -165,6 +167,7 @@ public class PublishCommand extends BuildCommand {
     Publisher publisher = new Publisher(
         params.getCell().getFilesystem(),
         Optional.fromNullable(remoteRepo),
+        config,
         dryRun,
         signArtifacts);
 
@@ -205,6 +208,8 @@ public class PublishCommand extends BuildCommand {
   @Override
   public ImmutableList<TargetNodeSpec> parseArgumentsAsTargetNodeSpecs(
       BuckConfig config, Iterable<String> targetsAsArgs) {
+    setBuckConfig(config);
+
     ImmutableList<TargetNodeSpec> specs = super.parseArgumentsAsTargetNodeSpecs(
         config,
         targetsAsArgs);
@@ -308,5 +313,9 @@ public class PublishCommand extends BuildCommand {
   @Override
   public String getShortDescription() {
     return "builds and publishes a library to a central repository";
+  }
+
+  public void setBuckConfig(BuckConfig config) {
+    this.config = config;
   }
 }
