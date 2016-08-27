@@ -1,4 +1,4 @@
-#@# GENERATED FILE: DO NOT MODIFY b0f4b53df6b659df703d14115cbc3f6981fa6a57 #@#
+#@# GENERATED FILE: DO NOT MODIFY 92be67cceecd4dcdf1a6b8479b66221f3fe66bca #@#
 {
   "maven" : {
     "deps" : [
@@ -14,6 +14,7 @@
       "//third-party/java/stringtemplate:stringtemplate"
     ],
     "exported_deps" : [
+      "//src/com/facebook/buck/cli:config",
       "//src/com/facebook/buck/io:io",
       "//src/com/facebook/buck/jvm/java:support",
       "//src/com/facebook/buck/maven:util",

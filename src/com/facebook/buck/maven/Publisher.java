@@ -49,6 +49,7 @@ import org.eclipse.aether.util.artifact.SubArtifact;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.PasswordAuthentication;
 import java.net.URL;
@@ -76,6 +77,7 @@ public class Publisher {
   private final boolean dryRun;
   private final boolean signArtifacts;
   private final PublishConfig config;
+  private final PrintStream console;
 
   public Publisher(
       ProjectFilesystem repositoryFilesystem,
@@ -87,17 +89,18 @@ public class Publisher {
   public Publisher(
       ProjectFilesystem repositoryFilesystem,
       Optional<URL> remoteRepoUrl,
+      PrintStream console,
       BuckConfig config,
       boolean dryRun,
       boolean signArtifacts) {
-    this(repositoryFilesystem.getRootPath(), remoteRepoUrl, config, dryRun, signArtifacts);
+    this(repositoryFilesystem.getRootPath(), remoteRepoUrl, config, console, dryRun, signArtifacts);
   }
 
   public Publisher(
       Path localRepoPath,
       Optional<URL> remoteRepoUrl,
       boolean dryRun) {
-    this(localRepoPath, remoteRepoUrl, null, dryRun, false);
+    this(localRepoPath, remoteRepoUrl, null, null, dryRun, false);
   }
 
   /**
@@ -112,6 +115,7 @@ public class Publisher {
       Path localRepoPath,
       Optional<URL> remoteRepoUrl,
       BuckConfig config,
+      PrintStream console,
       boolean dryRun,
       boolean signArtifacts) {
 
@@ -132,6 +136,7 @@ public class Publisher {
     this.remoteRepo = AetherUtil.toRemoteRepository(repo);
 
     this.locator = AetherUtil.initServiceLocator();
+    this.console = console;
   }
 
   public ImmutableSet<DeployResult> publish(
@@ -305,6 +310,8 @@ public class Publisher {
 
     DeployRequest deployRequest = createDeployRequest(toPublish);
 
+    print(toPublish);
+
     if (dryRun) {
       return new DeployResult(deployRequest)
           .setArtifacts(toPublish)
@@ -313,6 +320,16 @@ public class Publisher {
       return repoSys.deploy(session, deployRequest);
 
     }
+  }
+
+  private void print(List<Artifact> toPublish) {
+    StringBuilder sb = new StringBuilder("Uploading...\n");
+    for (Artifact artifact : toPublish) {
+      sb.append(String.format("\t%s:%s:%s:%s:%s <- %s\n",
+        artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
+        artifact.getClassifier(), artifact.getExtension(), artifact.getFile().getPath()));
+    }
+    console.print(sb);
   }
 
   private DeployRequest createDeployRequest(List<Artifact> toPublish) {

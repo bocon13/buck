@@ -17,6 +17,7 @@ CONFIG_SRCS = [
   'ProjectTestsMode.java',
   'PluginConfig.java',
   'SlbBuckConfig.java',
+  'PublishConfig.java',
 ]
 java_library(
   name = 'config',

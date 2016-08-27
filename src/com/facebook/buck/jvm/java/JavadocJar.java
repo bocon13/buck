@@ -38,6 +38,7 @@ import com.facebook.buck.zip.ZipStep;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -45,6 +46,8 @@ import com.google.common.collect.ImmutableSortedSet;
 
 import java.nio.file.Path;
 import java.util.List;
+
+import javax.annotation.Nullable;
 
 
 public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates, HasSources, MavenPublishable {
@@ -87,12 +90,19 @@ public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates
     steps.add(new RmStep(getProjectFilesystem(), output, /* force deletion */ true));
     steps.add(new MakeCleanDirectoryStep(getProjectFilesystem(), temp));
 
-    ImmutableList<String> srcs = FluentIterable.from(sources).transform(new Function<SourcePath, String>() {
-      @Override
-      public String apply(SourcePath input) {
-        return getResolver().getAbsolutePath(input).toString();
-      }
-    }).toList();
+    ImmutableList<String> srcs = FluentIterable.from(sources)
+        .filter(new Predicate<SourcePath>() {
+          @Override
+          public boolean apply(@Nullable SourcePath input) {
+            return getResolver().getRelativePath(input).toString().endsWith(".java");
+          }
+        })
+        .transform(new Function<SourcePath, String>() {
+          @Override
+          public String apply(SourcePath input) {
+            return getResolver().getAbsolutePath(input).toString();
+          }
+        }).toList();
     steps.add(new JavadocStep(temp, windowTitle, null, null, null, null, null, srcs));
 
     steps.add(
