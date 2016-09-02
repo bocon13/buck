@@ -97,7 +97,7 @@ public class JavaTestDescription implements
     SourcePathResolver pathResolver = new SourcePathResolver(resolver);
     BuildTarget target = params.getBuildTarget();
 
-    // We know that the flavour we're being asked to create is valid, since the check is done when
+    // We know that the flavor we're being asked to create is valid, since the check is done when
     // creating the action graph from the target graph.
 
     ImmutableSortedSet<Flavor> flavors = target.getFlavors();
@@ -176,17 +176,15 @@ public class JavaTestDescription implements
             new BuildTargetSourcePath(test.getBuildTarget())));
 
 
-    //FIXME verify that classifier is tests
     if (flavors.contains(JavaLibrary.MAVEN_JAR)) {
+      //FIXME BOC verify that classifier is tests
       return MavenUberJar.create(
           test,
           Preconditions.checkNotNull(paramsWithMavenFlavor),
           pathResolver,
-          args.mavenCoords,
-          args.tests.get());
+          args.mavenCoords);
     }
     return test;
-
   }
 
   @Override

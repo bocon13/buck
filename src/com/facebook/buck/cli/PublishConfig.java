@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-present Facebook, Inc.
+ * Copyright 2016-present Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -51,8 +51,6 @@ public class PublishConfig {
   public Optional<PasswordAuthentication> getRepoCredentials() {
     Optional<String> user = delegate.getValue(PUBLISH_SECION, "maven_user");
     Optional<String> password = delegate.getValue(PUBLISH_SECION, "maven_password");
-//    Optional<String> user = delegate.getValue("credentials", "maven_user");
-//    Optional<String> password = delegate.getValue("credentials", "maven_password");
     if (!user.isPresent() || !password.isPresent()) {
       return Optional.absent();
     }
@@ -68,7 +66,7 @@ public class PublishConfig {
     return delegate.getValue(PUBLISH_SECION, "pgp_pasword").or("").toCharArray();
   }
 
-  /* FIXME consider falling back to download config
+  /* FIXME BOC consider falling back to download config
   public Optional<String> getMavenRepo() {
     return delegate.getValue("download", "maven_repo");
   }
