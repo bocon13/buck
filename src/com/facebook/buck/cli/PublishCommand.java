@@ -21,6 +21,7 @@ import com.facebook.buck.jvm.java.JavaLibrary;
 import com.facebook.buck.jvm.java.MavenPublishable;
 import com.facebook.buck.maven.Publisher;
 import com.facebook.buck.model.BuildTarget;
+import com.facebook.buck.model.Flavor;
 import com.facebook.buck.parser.BuildTargetSpec;
 import com.facebook.buck.parser.NoSuchBuildTargetException;
 import com.facebook.buck.parser.TargetNodeSpec;
@@ -51,7 +52,6 @@ public class PublishCommand extends BuildCommand {
   public static final String INCLUDE_SOURCE_LONG_ARG = "--include-source";
   public static final String INCLUDE_SOURCE_SHORT_ARG = "-s";
   public static final String INCLUDE_JAVADOC_LONG_ARG = "--include-javadoc";
-  public static final String INCLUDE_TESTS_LONG_ARG = "--include-tests";
   public static final String TO_MAVEN_CENTRAL_LONG_ARG = "--to-maven-central";
   public static final String DRY_RUN_LONG_ARG = "--dry-run";
   public static final String SIGN_LONG_ARG = "--sign";
@@ -78,11 +78,6 @@ public class PublishCommand extends BuildCommand {
       name = INCLUDE_JAVADOC_LONG_ARG,
       usage = "Publish javadoc as well")
   private boolean includeJavadoc = false;
-
-  @Option(
-      name = INCLUDE_TESTS_LONG_ARG,
-      usage = "Publish tests jar as well")
-  private boolean includeTests = false;
 
   @Option(
       name = DRY_RUN_LONG_ARG,
@@ -149,19 +144,6 @@ public class PublishCommand extends BuildCommand {
         continue;
       }
       publishables.add(publishable);
-
-//      if (includeTests && publishable.hasTest()) {
-//        BuildTarget tests = publishable.getTest();
-//        try {
-//          buildRule = getBuild().getRuleResolver().requireRule(tests);
-//        } catch (NoSuchBuildTargetException e) {
-//          // This doesn't seem physically possible!
-//          Throwables.propagate(e);
-//        }      Preconditions.checkNotNull(buildRule);
-//        Preconditions.checkNotNull(buildRule);
-//
-//        //JavaTest test = (JavaTest) buildRule;
-//      }
     }
 
     Publisher publisher = new Publisher(
@@ -206,109 +188,81 @@ public class PublishCommand extends BuildCommand {
     return artifact.toString() + " < " + artifact.getFile();
   }
 
+  private void addFlavorToSpecList(final ImmutableList<TargetNodeSpec> specs,
+                                   final Flavor flavor,
+                                   ImmutableList.Builder<TargetNodeSpec> builder) {
+    builder.addAll(FluentIterable
+        .from(specs)
+        .filter(
+            new Predicate<TargetNodeSpec>() {
+              @Override
+              public boolean apply(TargetNodeSpec input) {
+                if (!(input instanceof BuildTargetSpec)) {
+                  throw new IllegalArgumentException(
+                      "Targets must be explicitly defined when including sources or javadocs");
+                }
+                return !((BuildTargetSpec) input)
+                    .getBuildTarget()
+                    .getFlavors()
+                    .contains(flavor);
+              }
+            })
+        .transform(
+            new Function<TargetNodeSpec, BuildTargetSpec>() {
+              @Override
+              public BuildTargetSpec apply(TargetNodeSpec input) {                      BuildTargetSpec buildTargetSpec = (BuildTargetSpec) input;
+                return ((BuildTargetSpec) input).withBuildTarget(
+                    BuildTarget
+                        .builder(((BuildTargetSpec) input).getBuildTarget())
+                        .addFlavors(flavor)
+                        .build());
+              }
+            }));
+  }
+
   @Override
   public ImmutableList<TargetNodeSpec> parseArgumentsAsTargetNodeSpecs(
       BuckConfig config, Iterable<String> targetsAsArgs) {
+    //FIXME BOC this is still a hack
     setBuckConfig(config);
 
     ImmutableList<TargetNodeSpec> specs = super.parseArgumentsAsTargetNodeSpecs(
         config,
         targetsAsArgs);
 
+    // Append "maven" flavor
     ImmutableList.Builder<TargetNodeSpec> builder = ImmutableList.<TargetNodeSpec>builder()
-                                                                 .addAll(specs);
+          .addAll(FluentIterable.from(specs)
+              .transform(
+                  new Function<TargetNodeSpec, TargetNodeSpec>() {
+                    @Nullable
+                    @Override
+                    public TargetNodeSpec apply(@Nullable TargetNodeSpec input) {
+                      if (!(input instanceof BuildTargetSpec)) {
+                        throw new IllegalArgumentException(
+                            "Need to specify build targets explicitly when publishing. " +
+                                "Cannot modify " + input);
+                      }
+                      BuildTargetSpec buildTargetSpec = (BuildTargetSpec) input;
+                      BuildTarget buildTarget =
+                          Preconditions.checkNotNull(buildTargetSpec.getBuildTarget());
+                      return buildTargetSpec.withBuildTarget(
+                          BuildTarget
+                              .builder(buildTarget)
+                              .addFlavors(JavaLibrary.MAVEN_JAR)
+                              .build());
+                    }
+                  }));
 
     if (includeSource) {
-      builder.addAll(FluentIterable
-              .from(specs)
-              .filter(
-                  new Predicate<TargetNodeSpec>() {
-                    @Override
-                    public boolean apply(TargetNodeSpec input) {
-                      if (!(input instanceof BuildTargetSpec)) {
-                        throw new IllegalArgumentException(
-                            "Targets must be explicitly defined when using " +
-                                INCLUDE_SOURCE_LONG_ARG);
-                      }
-                      return !((BuildTargetSpec) input)
-                          .getBuildTarget()
-                          .getFlavors()
-                          .contains(JavaLibrary.SRC_JAR);
-                    }
-                  })
-              .transform(
-                  new Function<TargetNodeSpec, BuildTargetSpec>() {
-                    @Override
-                    public BuildTargetSpec apply(TargetNodeSpec input) {
-                      return BuildTargetSpec.of(
-                          ((BuildTargetSpec) input)
-                              .getBuildTarget()
-                              .withFlavors(JavaLibrary.SRC_JAR),
-                          input.getBuildFileSpec());
-                    }
-                  }));
+      addFlavorToSpecList(specs, JavaLibrary.SRC_JAR, builder);
     }
 
-    //FIXME refactor this to be same as above
     if (includeJavadoc) {
-      builder.addAll(FluentIterable
-              .from(specs)
-              .filter(
-                  new Predicate<TargetNodeSpec>() {
-                    @Override
-                    public boolean apply(TargetNodeSpec input) {
-                      if (!(input instanceof BuildTargetSpec)) {
-                        throw new IllegalArgumentException(
-                            "Targets must be explicitly defined when using " +
-                                INCLUDE_JAVADOC_LONG_ARG);
-                      }
-                      return !((BuildTargetSpec) input)
-                          .getBuildTarget()
-                          .getFlavors()
-                          .contains(JavaLibrary.JAVADOC_JAR);
-                    }
-                  })
-              .transform(
-                  new Function<TargetNodeSpec, BuildTargetSpec>() {
-                    @Override
-                    public BuildTargetSpec apply(TargetNodeSpec input) {
-                      return BuildTargetSpec.of(
-                          ((BuildTargetSpec) input)
-                              .getBuildTarget()
-                              .withFlavors(JavaLibrary.JAVADOC_JAR),
-                          input.getBuildFileSpec());
-                    }
-                  }));
+      addFlavorToSpecList(specs, JavaLibrary.JAVADOC_JAR, builder);
     }
 
-
-    //FIXME we may be able to refactor this
-    // Append "maven" flavor
-    specs = FluentIterable
-        .from(builder.build())
-        .transform(
-            new Function<TargetNodeSpec, TargetNodeSpec>() {
-              @Nullable
-              @Override
-              public TargetNodeSpec apply(@Nullable TargetNodeSpec input) {
-                if (!(input instanceof BuildTargetSpec)) {
-                  throw new IllegalArgumentException(
-                      "Need to specify build targets explicitly when publishing. " +
-                          "Cannot modify " + input);
-                }
-                BuildTargetSpec buildTargetSpec = (BuildTargetSpec) input;
-                BuildTarget buildTarget =
-                    Preconditions.checkNotNull(buildTargetSpec.getBuildTarget());
-                return buildTargetSpec.withBuildTarget(
-                    BuildTarget
-                        .builder(buildTarget)
-                        .addFlavors(JavaLibrary.MAVEN_JAR)
-                        .build());
-              }
-            })
-        .toList();
-
-    return specs;
+    return builder.build();
   }
 
   @Override
@@ -316,6 +270,7 @@ public class PublishCommand extends BuildCommand {
     return "builds and publishes a library to a central repository";
   }
 
+  //FIXME BOC hackcity
   public void setBuckConfig(BuckConfig config) {
     this.config = config;
   }

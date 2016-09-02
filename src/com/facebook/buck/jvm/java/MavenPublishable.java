@@ -16,7 +16,6 @@
 
 package com.facebook.buck.jvm.java;
 
-import com.facebook.buck.model.BuildTarget;
 import com.facebook.buck.rules.BuildRule;
 
 /**
@@ -36,16 +35,4 @@ public interface MavenPublishable extends HasMavenCoordinates {
    * dependencies for the artifact.
    */
   Iterable<BuildRule> getPackagedDependencies();
-
-  /**
-   * FIXME
-   * @return
-   */
-  boolean hasTest();
-
-  /**
-   * FIXME
-   * @return
-   */
-  BuildTarget getTest();
 }
