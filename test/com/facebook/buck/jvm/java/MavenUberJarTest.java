@@ -31,7 +31,6 @@ import com.facebook.buck.rules.SourcePathResolver;
 import com.facebook.buck.rules.TargetGraph;
 import com.facebook.buck.testutil.FakeProjectFilesystem;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableSortedSet;
 
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -68,8 +67,7 @@ public class MavenUberJarTest {
         (JavaLibrary) javaLibraryBuilder.build(ruleResolver),
         javaLibraryBuilder.createBuildRuleParams(ruleResolver, filesystem),
         new SourcePathResolver(ruleResolver),
-        Optional.of("com.facebook.buck.jvm.java:java:jar:42"),
-        ImmutableSortedSet.<BuildTarget>of());
+        Optional.of("com.facebook.buck.jvm.java:java:jar:42"));
     assertThat(buildRule.getDeps(), Matchers.not(Matchers.hasItem(pythonLibrary)));
   }
 }
