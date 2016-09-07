@@ -148,6 +148,7 @@ public class Pom {
     model.setArtifactId(mavenCoordinates.getArtifactId());
     model.setVersion(mavenCoordinates.getVersion());
 
+    //FIXME BOC this needs to be resolved
     Parent pom = new Parent();
     pom.setGroupId("org.onosproject");
     pom.setArtifactId("onos-base");

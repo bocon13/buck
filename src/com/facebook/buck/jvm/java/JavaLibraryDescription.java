@@ -206,8 +206,7 @@ public class JavaLibraryDescription implements Description<JavaLibraryDescriptio
           defaultJavaLibrary,
           Preconditions.checkNotNull(paramsWithMavenFlavor),
           pathResolver,
-          args.mavenCoords,
-          args.tests.get());
+          args.mavenCoords);
     }
   }
 

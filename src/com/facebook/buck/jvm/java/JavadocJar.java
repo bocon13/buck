@@ -20,7 +20,6 @@ import static com.facebook.buck.zip.ZipCompressionLevel.DEFAULT_COMPRESSION_LEVE
 
 import com.facebook.buck.model.BuildTarget;
 import com.facebook.buck.model.BuildTargets;
-import com.facebook.buck.rules.AbstractBuildRule;
 import com.facebook.buck.rules.AddToRuleKey;
 import com.facebook.buck.rules.BuildContext;
 import com.facebook.buck.rules.BuildRule;
@@ -42,7 +41,9 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.hash.HashCode;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -50,14 +51,13 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 
-public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates, HasSources, MavenPublishable {
+public class JavadocJar extends AbstractJavaLibrary {
 
   @AddToRuleKey
   private final ImmutableSortedSet<SourcePath> sources;
 
   private final Path output;
   private final Path temp;
-  private final Optional<String> mavenCoords;
 
   private final String windowTitle;
 
@@ -66,7 +66,17 @@ public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates
       SourcePathResolver resolver,
       ImmutableSortedSet<SourcePath> sources,
       Optional<String> mavenCoords) {
-    super(params, resolver);
+    super(params,
+          resolver,
+          sources,
+          /* resources */ ImmutableSet.<SourcePath>of(),
+          /* generated source folder */ Optional.<Path>absent(),
+          /* exported deps */ ImmutableSortedSet.<BuildRule>of(),
+          /* provided deps */ ImmutableSortedSet.<BuildRule>of(),
+          /* additional classpath entries */ ImmutableSet.<Path>of(),
+          /* resources root */ Optional.<Path>absent(),
+          mavenCoords
+         );
     this.sources = sources;
     BuildTarget target = params.getBuildTarget();
     this.output = getProjectFilesystem().getRootPath().getFileSystem().getPath(
@@ -77,8 +87,8 @@ public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates
             target.getShortName()));
 
     this.temp = BuildTargets.getScratchPath(getProjectFilesystem(), target, "%s-javadoc");
-    this.mavenCoords = mavenCoords;
     this.windowTitle = target.getShortName(); //FIXME what is the actual title that we want? this is name of target
+
   }
 
   @Override
@@ -103,7 +113,44 @@ public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates
             return getResolver().getAbsolutePath(input).toString();
           }
         }).toList();
-    steps.add(new JavadocStep(temp, windowTitle, null, null, null, null, null, srcs));
+
+    ImmutableList<String> classpath = FluentIterable.from(getDeclaredClasspathEntries().values())
+        .transform(new Function<Path, String>() {
+          @Nullable
+          @Override
+          public String apply(@Nullable Path input) {
+            return input != null ? input.toAbsolutePath().toString() : null;
+          }
+        }).toList();
+
+
+    steps.add(new JavadocStep(
+        temp,
+        windowTitle,
+        ImmutableList.of("org.onosproject"), //subpackages
+        null, //FIXME BOC sourcepaths; seems not required
+        classpath,
+        ImmutableList.of("onos.rsModel:a:\"onos model\""), //FIXME BOC
+        ImmutableList.of("http://docs.oracle.com/javase/8/docs/api"), //link urls
+        srcs));
+
+    /*
+    '-tag onos.rsModel:a:"onos model"',
+        '-quiet',
+        '-protected',
+        '-encoding UTF-8',
+        '-charset UTF-8',
+        '-notimestamp',
+        '-windowtitle "' + title + '"',
+        '-link http://docs.oracle.com/javase/8/docs/api',
+        '-subpackages ',
+        ':'.join(pkgs),
+        '-sourcepath ',
+        ':'.join(sourcepath),
+        ' -classpath ',
+        ':'.join(['$(classpath %s)' % n for n in deps]),
+        '-d $TMP',
+     */
 
     steps.add(
         new ZipStep(
@@ -125,6 +172,11 @@ public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates
   }
 
   @Override
+  public Optional<Path> getGeneratedSourcePath() {
+    return null;
+  }
+
+  @Override
   public Path getPathToOutput() {
     return output;
   }
@@ -135,26 +187,14 @@ public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates
   }
 
   @Override
-  public Iterable<HasMavenCoordinates> getMavenDeps() {
-    return ImmutableList.of();
+  public Optional<SourcePath> getAbiJar() {
+    return Optional.absent(); //FIXME BOC
   }
 
   @Override
-  public Iterable<BuildRule> getPackagedDependencies() {
-    return ImmutableList.of();
+  public ImmutableSortedMap<String, HashCode> getClassNamesToHashes() {
+    return ImmutableSortedMap.of(); //FIXME BOC
   }
-
-  @Override
-  public boolean hasTest() {
-    return false;
-  }
-
-  @Override
-  public BuildTarget getTest() {
-    //FIXME
-    return null;
-  }
-
 
   private static class JavadocStep extends ShellStep {
 
