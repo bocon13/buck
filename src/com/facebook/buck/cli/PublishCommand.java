@@ -149,8 +149,8 @@ public class PublishCommand extends BuildCommand {
     Publisher publisher = new Publisher(
         params.getCell().getFilesystem(),
         Optional.fromNullable(remoteRepo),
-        params.getConsole().getStdOut(),
-        config,
+        params.getConsole().getStdOut(), // FIXME BOC pass through better
+        config, // FIXME BOC pass through better
         dryRun,
         signArtifacts);
 

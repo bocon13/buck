@@ -26,7 +26,6 @@ import com.facebook.buck.jvm.core.JavaPackageFinder;
 import com.facebook.buck.jvm.core.SuggestBuildRules;
 import com.facebook.buck.model.BuildTarget;
 import com.facebook.buck.model.BuildTargets;
-import com.facebook.buck.rules.AbstractBuildRule;
 import com.facebook.buck.rules.AddToRuleKey;
 import com.facebook.buck.rules.BuildContext;
 import com.facebook.buck.rules.BuildOutputInitializer;
@@ -40,22 +39,18 @@ import com.facebook.buck.rules.InitializableFromDisk;
 import com.facebook.buck.rules.OnDiskBuildInfo;
 import com.facebook.buck.rules.SourcePath;
 import com.facebook.buck.rules.SourcePathResolver;
-import com.facebook.buck.rules.SourcePaths;
 import com.facebook.buck.rules.keys.SupportsDependencyFileRuleKey;
 import com.facebook.buck.rules.keys.SupportsInputBasedRuleKey;
 import com.facebook.buck.step.Step;
 import com.facebook.buck.step.fs.MakeCleanDirectoryStep;
 import com.facebook.buck.step.fs.MkdirStep;
 import com.facebook.buck.step.fs.TouchStep;
-import com.facebook.buck.util.HumanReadableException;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
@@ -93,7 +88,7 @@ import javax.annotation.Nullable;
  * Then this would compile {@code FeedStoryRenderer.java} against Guava and the classes generated
  * from the {@code //src/com/facebook/feed/model:model} rule.
  */
-public class DefaultJavaLibrary extends AbstractBuildRule
+public class DefaultJavaLibrary extends AbstractJavaLibrary
     implements JavaLibrary, HasClasspathEntries, ExportDependencies,
     InitializableFromDisk<JavaLibrary.Data>, AndroidPackageable,
     SupportsInputBasedRuleKey, SupportsDependencyFileRuleKey, JavaLibraryWithTests {
@@ -101,36 +96,15 @@ public class DefaultJavaLibrary extends AbstractBuildRule
   private static final BuildableProperties OUTPUT_TYPE = new BuildableProperties(LIBRARY);
 
   @AddToRuleKey
-  private final ImmutableSortedSet<SourcePath> srcs;
-  @AddToRuleKey
-  private final ImmutableSortedSet<SourcePath> resources;
-  @AddToRuleKey(stringify = true)
-  private final Optional<Path> resourcesRoot;
-  @AddToRuleKey
-  private final Optional<String> mavenCoords;
-  private final Optional<Path> outputJar;
-  @AddToRuleKey
   private final Optional<SourcePath> proguardConfig;
   @AddToRuleKey
   private final ImmutableList<String> postprocessClassesCommands;
-  private final ImmutableSortedSet<BuildRule> exportedDeps;
-  private final ImmutableSortedSet<BuildRule> providedDeps;
-  // Some classes need to override this when enhancing deps (see AndroidLibrary).
-  private final ImmutableSet<Path> additionalClasspathEntries;
-  private final Supplier<ImmutableSet<Path>>
-      outputClasspathEntriesSupplier;
-  private final Supplier<ImmutableSetMultimap<JavaLibrary, Path>>
-      transitiveClasspathEntriesSupplier;
-  private final Supplier<ImmutableSet<JavaLibrary>> transitiveClasspathDepsSupplier;
-  private final Supplier<ImmutableSetMultimap<JavaLibrary, Path>>
-      declaredClasspathEntriesSupplier;
 
   private final SourcePath abiJar;
   private final boolean trackClassUsage;
   @AddToRuleKey
   @SuppressWarnings("PMD.UnusedPrivateField")
   private final JarArchiveDependencySupplier abiClasspath;
-  private final ImmutableSortedSet<BuildRule> deps;
   @Nullable private Path depFileOutputPath;
 
   private final BuildOutputInitializer<Data> buildOutputInitializer;
@@ -247,85 +221,25 @@ public class DefaultJavaLibrary extends AbstractBuildRule
                 return resolver.filterBuildRuleInputs(abiClasspath.get());
               }
             }),
-        resolver);
+        resolver,
+        srcs,
+        resources,
+        generatedSourceFolder,
+        exportedDeps,
+        providedDeps,
+        additionalClasspathEntries,
+        resourcesRoot,
+        mavenCoords
+        );
     this.compileStepFactory = compileStepFactory;
 
-    // Exported deps are meant to be forwarded onto the CLASSPATH for dependents,
-    // and so only make sense for java library types.
-    for (BuildRule dep : exportedDeps) {
-      if (!(dep instanceof JavaLibrary)) {
-        throw new HumanReadableException(
-            params.getBuildTarget() + ": exported dep " +
-            dep.getBuildTarget() + " (" + dep.getType() + ") " +
-            "must be a type of java library.");
-      }
-    }
-
-    this.srcs = ImmutableSortedSet.copyOf(srcs);
-    this.resources = ImmutableSortedSet.copyOf(resources);
     this.proguardConfig = proguardConfig;
     this.postprocessClassesCommands = postprocessClassesCommands;
-    this.exportedDeps = exportedDeps;
-    this.providedDeps = providedDeps;
-    this.additionalClasspathEntries = FluentIterable
-        .from(additionalClasspathEntries)
-        .transform(getProjectFilesystem().getAbsolutifier())
-        .toSet();
-    this.resourcesRoot = resourcesRoot;
-    this.mavenCoords = mavenCoords;
     this.tests = tests;
 
     this.abiJar = abiJar;
     this.trackClassUsage = trackClassUsage;
     this.abiClasspath = abiClasspath;
-    this.deps = params.getDeps();
-    if (!srcs.isEmpty() || !resources.isEmpty()) {
-      this.outputJar = Optional.of(getOutputJarPath(getBuildTarget(), getProjectFilesystem()));
-    } else {
-      this.outputJar = Optional.absent();
-    }
-
-    this.outputClasspathEntriesSupplier =
-        Suppliers.memoize(new Supplier<ImmutableSet<Path>>() {
-          @Override
-          public ImmutableSet<Path> get() {
-            return JavaLibraryClasspathProvider.getOutputClasspathJars(
-                DefaultJavaLibrary.this,
-                getResolver(),
-                sourcePathForOutputJar());
-          }
-        });
-
-    this.transitiveClasspathEntriesSupplier =
-        Suppliers.memoize(new Supplier<ImmutableSetMultimap<JavaLibrary, Path>>() {
-          @Override
-          public ImmutableSetMultimap<JavaLibrary, Path> get() {
-            return JavaLibraryClasspathProvider.getTransitiveClasspathEntries(
-                DefaultJavaLibrary.this,
-                getResolver(),
-                sourcePathForOutputJar());
-          }
-        });
-
-    this.transitiveClasspathDepsSupplier =
-        Suppliers.memoize(
-            new Supplier<ImmutableSet<JavaLibrary>>() {
-              @Override
-              public ImmutableSet<JavaLibrary> get() {
-                return JavaLibraryClasspathProvider.getTransitiveClasspathDeps(
-                    DefaultJavaLibrary.this,
-                    sourcePathForOutputJar());
-              }
-            });
-
-    this.declaredClasspathEntriesSupplier =
-        Suppliers.memoize(new Supplier<ImmutableSetMultimap<JavaLibrary, Path>>() {
-          @Override
-          public ImmutableSetMultimap<JavaLibrary, Path> get() {
-            return JavaLibraryClasspathProvider.getDeclaredClasspathEntries(
-                DefaultJavaLibrary.this);
-          }
-        });
 
     this.buildOutputInitializer = new BuildOutputInitializer<>(params.getBuildTarget(), this);
     this.generatedSourceFolder = generatedSourceFolder;
@@ -338,10 +252,6 @@ public class DefaultJavaLibrary extends AbstractBuildRule
 
   public static Path getOutputJarDirPath(BuildTarget target, ProjectFilesystem filesystem) {
     return BuildTargets.getGenPath(filesystem, target, "lib__%s__output");
-  }
-
-  private Optional<SourcePath> sourcePathForOutputJar() {
-    return outputJar.transform(SourcePaths.getToBuildTargetSourcePath(getBuildTarget()));
   }
 
   static Path getOutputJarPath(BuildTarget target, ProjectFilesystem filesystem) {
@@ -660,7 +570,7 @@ public class DefaultJavaLibrary extends AbstractBuildRule
     return DefaultClassUsageFileReader.loadFromFile(
         getProjectFilesystem(),
         Preconditions.checkNotNull(depFileOutputPath),
-        deps);
+        getDeps());
   }
 
 }

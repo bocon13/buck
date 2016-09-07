@@ -77,8 +77,10 @@ public class Publisher {
   private final boolean dryRun;
   private final boolean signArtifacts;
   private final PublishConfig config;
+  //FIXME BOC requires refactor
   private final PrintStream console;
 
+  //FIXME some of these constructors can be pruned
   public Publisher(
       ProjectFilesystem repositoryFilesystem,
       Optional<URL> remoteRepoUrl,
@@ -187,16 +189,6 @@ public class Publisher {
           // pom alongside
           File pom = Pom.generatePomFile(publishable).toFile();
           deployResultBuilder.add(publish(coords, ImmutableList.of(mainItem, pom)));
-          // if includeTest
-//          if (/*includeTest*/true && publishable.hasTest()){
-//            DefaultArtifact testCoords = new DefaultArtifact(
-//                coords.getGroupId(),
-//                coords.getArtifactId(),
-//                "classifier",
-//                coords.getExtension(),
-//                coords.getVersion());
-//            BuildTarget testJar = publishable.getTest();
-//          }
         } else {
           // Otherwise, just publish the auxiliary artifact (e.g. -sources, -tests, -javadoc)
           deployResultBuilder.add(publish(coords, ImmutableList.of(mainItem)));
