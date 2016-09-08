@@ -210,11 +210,11 @@ public class PublishCommand extends BuildCommand {
         .transform(
             new Function<TargetNodeSpec, BuildTargetSpec>() {
               @Override
-              public BuildTargetSpec apply(TargetNodeSpec input) {                      BuildTargetSpec buildTargetSpec = (BuildTargetSpec) input;
+              public BuildTargetSpec apply(TargetNodeSpec input) {
                 return ((BuildTargetSpec) input).withBuildTarget(
                     BuildTarget
                         .builder(((BuildTargetSpec) input).getBuildTarget())
-                        .addFlavors(flavor)
+                        .addFlavors(flavor, JavaLibrary.MAVEN_JAR)
                         .build());
               }
             }));
