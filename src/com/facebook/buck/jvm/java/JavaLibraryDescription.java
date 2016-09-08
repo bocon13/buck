@@ -133,12 +133,19 @@ public class JavaLibraryDescription implements Description<JavaLibraryDescriptio
             }
           });
 
-      return new JavadocJar(
-          params,
-          pathResolver,
-          args.srcs.get(),
-          args.mavenCoords
-      );
+      if (!flavors.contains(JavaLibrary.MAVEN_JAR)) {
+        return new JavadocJar(
+            params,
+            pathResolver,
+            args.srcs.get(),
+            args.mavenCoords);
+      } else {
+        return MavenUberJar.MavenJavadocJar.create(
+            Preconditions.checkNotNull(paramsWithMavenFlavor),
+            pathResolver,
+            args.srcs.get(),
+            args.mavenCoords);
+      }
     }
 
     JavacOptions javacOptions = JavacOptionsFactory.create(

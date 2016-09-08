@@ -19,16 +19,13 @@ package com.facebook.buck.jvm.java.abi;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Enumeration;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
 
 /**
  * A {@link Walker} which iterates over entries of a ZIP file in sorted (name) order.
@@ -44,27 +41,24 @@ class ZipWalker implements Walker {
   public void walk(FileAction onFile) throws IOException {
     Set<String> names = Sets.newTreeSet();
 
-    // Get the set of all names and sort them, so that we get a deterministic iteration order.
-    try (
-        FileInputStream fis = new FileInputStream(zipFile.toFile());
-        BufferedInputStream bis = new BufferedInputStream(fis);
-        ZipInputStream zis = new ZipInputStream(bis)) {
-      for (ZipEntry entry = zis.getNextEntry(); entry != null; entry = zis.getNextEntry()) {
+    if (zipFile.toFile().length() == 0) {
+      return;
+    }
+
+    try (ZipFile zip = new ZipFile(zipFile.toFile())) {
+      // Get the set of all names and sort them, so that we get a deterministic iteration order.
+      Enumeration<? extends ZipEntry> entries = zip.entries();
+      while (entries.hasMoreElements()) {
+        ZipEntry entry = entries.nextElement();
         if (entry.isDirectory()) {
           continue;
         }
         names.add(entry.getName());
       }
-    }
 
-    // Iterate over the file entries, calling the action on each one.
-    if (!names.isEmpty()) {
-      try (ZipFile zip = new ZipFile(zipFile.toFile())) {
-        for (String name : names) {
-          try (InputStream is = zip.getInputStream(zip.getEntry(name))) {
-            onFile.visit(Paths.get(name), is);
-          }
-        }
+      // Iterate over the file entries, calling the action on each one.
+      for (String name : names) {
+        onFile.visit(Paths.get(name), zip.getInputStream(zip.getEntry(name)));
       }
     }
   }
