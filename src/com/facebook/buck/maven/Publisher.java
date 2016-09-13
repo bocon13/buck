@@ -184,7 +184,7 @@ public class Publisher {
 
 
       try {
-        if (coords.getClassifier().isEmpty()) {
+        if (coords.getClassifier().isEmpty() && coords.getExtension().endsWith("jar")) {
           // If this is the "main" artifact (denoted by lack of classifier) generate and publish
           // pom alongside
           File pom = Pom.generatePomFile(publishable).toFile();

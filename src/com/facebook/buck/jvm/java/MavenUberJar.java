@@ -28,7 +28,6 @@ import com.facebook.buck.step.fs.MkdirStep;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.FluentIterable;
@@ -39,6 +38,7 @@ import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 
 import java.nio.file.Path;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -106,21 +106,21 @@ public class MavenUberJar extends AbstractBuildRule implements MavenPublishable 
 
   private static ImmutableSortedSet<Path> toOutputPaths(Iterable<? extends BuildRule> rules) {
     return FluentIterable
-          .from(rules)
-          .transform(
-              new Function<BuildRule, Path>() {
-                @Nullable
-                @Override
-                public Path apply(BuildRule input) {
-                  Path pathToOutput = input.getPathToOutput();
-                  if (pathToOutput == null) {
-                    return null;
-                  }
-                  return input.getProjectFilesystem().resolve(pathToOutput);
+        .from(rules)
+        .transform(
+            new Function<BuildRule, Path>() {
+              @Nullable
+              @Override
+              public Path apply(BuildRule input) {
+                Path pathToOutput = input.getPathToOutput();
+                if (pathToOutput == null) {
+                  return null;
                 }
-              })
-          .filter(Predicates.notNull())
-          .toSortedSet(Ordering.<Path>natural());
+                return input.getProjectFilesystem().resolve(pathToOutput);
+              }
+            })
+        .filter(Predicates.notNull())
+        .toSortedSet(Ordering.<Path>natural());
   }
 
   @Override
@@ -219,7 +219,7 @@ public class MavenUberJar extends AbstractBuildRule implements MavenPublishable 
         Optional<String> mavenCoords) {
       TraversedDeps traversedDeps = TraversedDeps.traverse(params.getDeps());
 
-      params = adjustParams(params, traversedDeps);
+//      params = adjustParams(params, traversedDeps);
 
       ImmutableSortedSet<SourcePath> sourcePaths =
           FluentIterable
@@ -265,36 +265,27 @@ public class MavenUberJar extends AbstractBuildRule implements MavenPublishable 
     }
 
     private static TraversedDeps traverse(ImmutableSet<? extends BuildRule> roots) {
-      ImmutableSortedSet.Builder<HasMavenCoordinates> depsCollector =
+      ImmutableSortedSet.Builder<JavaLibrary> candidates =
           ImmutableSortedSet.naturalOrder();
-
-      ImmutableSortedSet.Builder<JavaLibrary> candidates = ImmutableSortedSet.naturalOrder();
       for (final BuildRule root : roots) {
         Preconditions.checkState(root instanceof HasClasspathEntries);
-        candidates.addAll(FluentIterable
-            .from(((HasClasspathEntries) root).getTransitiveClasspathDeps())
-            .filter(new Predicate<JavaLibrary>() {
-              @Override
-              public boolean apply(JavaLibrary buildRule) {
-                return !root.equals(buildRule);
-              }
-            }));
+        // root will be included as a candidate
+        candidates.addAll(((HasClasspathEntries) root).getTransitiveClasspathDeps());
       }
-      ImmutableSortedSet.Builder<JavaLibrary> removals = ImmutableSortedSet.naturalOrder();
+
+      ImmutableSortedSet.Builder<HasMavenCoordinates> mavenDeps = ImmutableSortedSet.naturalOrder();
       for (JavaLibrary javaLibrary : candidates.build()) {
         if (HasMavenCoordinates.MAVEN_COORDS_PRESENT_PREDICATE.apply(javaLibrary)) {
-          depsCollector.add(javaLibrary);
-          removals.addAll(javaLibrary.getTransitiveClasspathDeps());
+          mavenDeps.add(javaLibrary);
+          //FIXME BOC do we always want to exclude all of a maven jar's dependencies? probably.
+          mavenDeps.addAll(javaLibrary.getTransitiveClasspathDeps());
         }
       }
 
+      Set<JavaLibrary> packagedDeps = Sets.difference(candidates.build(), mavenDeps.build());
       return new TraversedDeps(
-          /* mavenDeps */ depsCollector.build(),
-          /* packagedDeps */ Sets.union(
-          roots,
-          Sets.difference(
-              candidates.build(),
-              removals.build())));
+          /* mavenDeps */ mavenDeps.build(),
+          /* packagedDeps */ ImmutableSet.<BuildRule>copyOf(packagedDeps));
     }
   }
 }
