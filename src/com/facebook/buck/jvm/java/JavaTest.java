@@ -111,8 +111,6 @@ public class JavaTest
 
   private final ImmutableSet<String> contacts;
 
-  private final ImmutableSet<Path> additionalClasspathEntries;
-
   private final Optional<Level> stdOutLogLevel;
   private final Optional<Level> stdErrLogLevel;
 
@@ -183,7 +181,6 @@ public class JavaTest
     this.nativeLibsEnvironment = ImmutableMap.copyOf(nativeLibsEnvironment);
     this.labels = ImmutableSet.copyOf(labels);
     this.contacts = ImmutableSet.copyOf(contacts);
-    this.additionalClasspathEntries = addtionalClasspathEntries;
     this.testType = testType;
     this.testRuleTimeoutMs = testRuleTimeoutMs;
     this.env = env;
