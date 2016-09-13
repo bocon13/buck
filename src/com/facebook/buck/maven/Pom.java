@@ -192,7 +192,8 @@ public class Pom {
 
   private static void updateDependency(Dependency dependency, Artifact providedMavenCoordinates) {
     dependency.setVersion(providedMavenCoordinates.getVersion());
-    dependency.setClassifier(providedMavenCoordinates.getClassifier());
+    //FIXME BOC hack
+    dependency.setClassifier(providedMavenCoordinates.getClassifier().equals("NON-OSGI") ? "" : providedMavenCoordinates.getClassifier());
   }
 
   public void flushToFile() throws IOException {
