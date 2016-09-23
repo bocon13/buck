@@ -314,8 +314,8 @@ public class DefaultJavaLibrary extends AbstractJavaLibrary
    * compile the {@code srcs} associated with this rule.  This set only contains the classpath
    * entries for those rules that are declared as direct dependencies of this rule.
    */
-  @VisibleForTesting
-  ImmutableSetMultimap<JavaLibrary, Path> getDeclaredClasspathEntries() {
+  @Override
+  protected ImmutableSetMultimap<JavaLibrary, Path> getDeclaredClasspathEntries() {
     return declaredClasspathEntriesSupplier.get();
   }
 

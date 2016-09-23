@@ -172,6 +172,11 @@ public class JavadocJar extends AbstractJavaLibrary {
   }
 
   @Override
+  public ImmutableSortedSet<SourcePath> getResources() {
+    return ImmutableSortedSet.of(); //FIXME BOC
+  }
+
+  @Override
   public Optional<Path> getGeneratedSourcePath() {
     return null;
   }
