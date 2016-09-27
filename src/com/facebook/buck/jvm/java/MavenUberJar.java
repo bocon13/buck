@@ -273,18 +273,19 @@ public class MavenUberJar extends AbstractBuildRule implements MavenPublishable 
         candidates.addAll(((HasClasspathEntries) root).getTransitiveClasspathDeps());
       }
 
-      ImmutableSortedSet.Builder<HasMavenCoordinates> mavenDeps = ImmutableSortedSet.naturalOrder();
+      ImmutableSortedSet.Builder<HasMavenCoordinates> mavenDepsBuilder = ImmutableSortedSet.naturalOrder();
       for (JavaLibrary javaLibrary : candidates.build()) {
         if (HasMavenCoordinates.MAVEN_COORDS_PRESENT_PREDICATE.apply(javaLibrary)) {
-          mavenDeps.add(javaLibrary);
+          mavenDepsBuilder.add(javaLibrary);
           //FIXME BOC do we always want to exclude all of a maven jar's dependencies? probably.
-          mavenDeps.addAll(javaLibrary.getTransitiveClasspathDeps());
+          mavenDepsBuilder.addAll(javaLibrary.getTransitiveClasspathDeps());
         }
       }
 
-      Set<JavaLibrary> packagedDeps = Sets.difference(candidates.build(), mavenDeps.build());
+      Set<HasMavenCoordinates> mavenDeps = Sets.difference(mavenDepsBuilder.build(), roots);
+      Set<JavaLibrary> packagedDeps = Sets.difference(candidates.build(), mavenDeps);
       return new TraversedDeps(
-          /* mavenDeps */ mavenDeps.build(),
+          /* mavenDeps */ mavenDeps,
           /* packagedDeps */ ImmutableSet.<BuildRule>copyOf(packagedDeps));
     }
   }
