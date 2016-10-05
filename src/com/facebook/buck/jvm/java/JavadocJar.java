@@ -18,8 +18,10 @@ package com.facebook.buck.jvm.java;
 
 import static com.facebook.buck.zip.ZipCompressionLevel.DEFAULT_COMPRESSION_LEVEL;
 
+import com.facebook.buck.io.ProjectFilesystem;
 import com.facebook.buck.model.BuildTarget;
 import com.facebook.buck.model.BuildTargets;
+import com.facebook.buck.model.Pair;
 import com.facebook.buck.rules.AddToRuleKey;
 import com.facebook.buck.rules.BuildContext;
 import com.facebook.buck.rules.BuildRule;
@@ -30,11 +32,14 @@ import com.facebook.buck.rules.SourcePathResolver;
 import com.facebook.buck.shell.ShellStep;
 import com.facebook.buck.step.ExecutionContext;
 import com.facebook.buck.step.Step;
+import com.facebook.buck.step.StepExecutionResult;
 import com.facebook.buck.step.fs.MakeCleanDirectoryStep;
 import com.facebook.buck.step.fs.MkdirStep;
 import com.facebook.buck.step.fs.RmStep;
+import com.facebook.buck.util.Escaper;
 import com.facebook.buck.zip.ZipStep;
 import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
@@ -45,11 +50,11 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.hash.HashCode;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
 import javax.annotation.Nullable;
-
 
 public class JavadocJar extends AbstractJavaLibrary {
 
@@ -58,8 +63,7 @@ public class JavadocJar extends AbstractJavaLibrary {
 
   private final Path output;
   private final Path temp;
-
-  private final String windowTitle;
+  private Optional<ImmutableList<Pair<String, ImmutableList<String>>>> groups = Optional.absent();
 
   public JavadocJar(
       BuildRuleParams params,
@@ -67,16 +71,16 @@ public class JavadocJar extends AbstractJavaLibrary {
       ImmutableSortedSet<SourcePath> sources,
       Optional<String> mavenCoords) {
     super(params,
-          resolver,
-          sources,
+        resolver,
+        sources,
           /* resources */ ImmutableSet.<SourcePath>of(),
           /* generated source folder */ Optional.<Path>absent(),
           /* exported deps */ ImmutableSortedSet.<BuildRule>of(),
           /* provided deps */ ImmutableSortedSet.<BuildRule>of(),
           /* additional classpath entries */ ImmutableSet.<Path>of(),
           /* resources root */ Optional.<Path>absent(),
-          mavenCoords
-         );
+        mavenCoords
+    );
     this.sources = sources;
     BuildTarget target = params.getBuildTarget();
     this.output = getProjectFilesystem().getRootPath().getFileSystem().getPath(
@@ -87,8 +91,10 @@ public class JavadocJar extends AbstractJavaLibrary {
             target.getShortName()));
 
     this.temp = BuildTargets.getScratchPath(getProjectFilesystem(), target, "%s-javadoc");
-    this.windowTitle = target.getShortName(); //FIXME what is the actual title that we want? this is name of target
+  }
 
+  public void setGroups(Optional<ImmutableList<Pair<String, ImmutableList<String>>>> groups) {
+    this.groups = groups;
   }
 
   @Override
@@ -100,17 +106,17 @@ public class JavadocJar extends AbstractJavaLibrary {
     steps.add(new RmStep(getProjectFilesystem(), output, /* force deletion */ true));
     steps.add(new MakeCleanDirectoryStep(getProjectFilesystem(), temp));
 
-    ImmutableList<String> srcs = FluentIterable.from(sources)
+    ImmutableList<Path> srcs = FluentIterable.from(sources)
         .filter(new Predicate<SourcePath>() {
           @Override
           public boolean apply(@Nullable SourcePath input) {
             return getResolver().getRelativePath(input).toString().endsWith(".java");
           }
         })
-        .transform(new Function<SourcePath, String>() {
+        .transform(new Function<SourcePath, Path>() {
           @Override
-          public String apply(SourcePath input) {
-            return getResolver().getAbsolutePath(input).toString();
+          public Path apply(SourcePath input) {
+            return getResolver().getAbsolutePath(input);
           }
         }).toList();
 
@@ -123,34 +129,35 @@ public class JavadocJar extends AbstractJavaLibrary {
           }
         }).toList();
 
+    Path pathToArgsList =
+        BuildTargets.getGenPath(getProjectFilesystem(), getBuildTarget(), "__%s__args");
+    Path pathToSrcsList =
+        BuildTargets.getGenPath(getProjectFilesystem(), getBuildTarget(), "__%s__srcs");
+    // args and sources list will share a parent directory
+    steps.add(new MkdirStep(getProjectFilesystem(), pathToSrcsList.getParent()));
+
+    //----------------------------- consider moving this up to the constructor ---------------------
+    JavadocArgs.Builder javadocArgs = JavadocArgs.builder()
+        .addArg("-windowtitle", getBuildTarget().getShortName()) //FIXME what is the actual title that we want? this is name of target
+        .addArg("-link", "http://docs.oracle.com/javase/8/docs/api") //FIXME from buckconfig + rule
+        .addArg("-tag", "onos.rsModel:a:\"onos model\"") //FIXME from buckconfig + rule
+        .addArg("-classpath", classpath);
+
+    if (groups.isPresent()) {
+      for (Pair<String, ImmutableList<String>> pair : groups.get()) {
+        javadocArgs.addArg("-group", pair.getFirst(), pair.getSecond());
+      }
+    }
+    //----------------------------- end block ------------------------------------------------------
 
     steps.add(new JavadocStep(
+        getProjectFilesystem(),
         temp,
-        windowTitle,
-        ImmutableList.of("org.onosproject"), //subpackages
-        null, //FIXME BOC sourcepaths; seems not required
-        classpath,
-        ImmutableList.of("onos.rsModel:a:\"onos model\""), //FIXME BOC
-        ImmutableList.of("http://docs.oracle.com/javase/8/docs/api"), //link urls
-        srcs));
-
-    /*
-    '-tag onos.rsModel:a:"onos model"',
-        '-quiet',
-        '-protected',
-        '-encoding UTF-8',
-        '-charset UTF-8',
-        '-notimestamp',
-        '-windowtitle "' + title + '"',
-        '-link http://docs.oracle.com/javase/8/docs/api',
-        '-subpackages ',
-        ':'.join(pkgs),
-        '-sourcepath ',
-        ':'.join(sourcepath),
-        ' -classpath ',
-        ':'.join(['$(classpath %s)' % n for n in deps]),
-        '-d $TMP',
-     */
+        srcs,
+        javadocArgs.build(),
+        pathToArgsList,
+        pathToSrcsList
+    ));
 
     steps.add(
         new ZipStep(
@@ -201,86 +208,121 @@ public class JavadocJar extends AbstractJavaLibrary {
     return ImmutableSortedMap.of(); //FIXME BOC
   }
 
+  public static class JavadocArgs {
+    private static final ImmutableList<ImmutableList<String>> DEFAULT_ARGS =
+        ImmutableList.of(
+          ImmutableList.of("-quiet"),
+          ImmutableList.of("-protected"),
+          ImmutableList.of("-encoding", "UTF-8"),
+          ImmutableList.of("-charset", "UTF-8"),
+          ImmutableList.of("-notimestamp")
+        );
+//    private static final String JAVA_SE_LINK_FORMAT = "http://docs.oracle.com/javase/%d/docs/api";
+
+    private final ImmutableList<ImmutableList<String>> args;
+
+    private JavadocArgs(ImmutableList<ImmutableList<String>> args) {
+      this.args = args;
+    }
+
+    public static Builder builder() {
+      return new Builder();
+    }
+
+    public Iterable<String> getLines() {
+      return FluentIterable.from(args)
+          .transform(new Function<ImmutableList<String>, String>() {
+            @Nullable
+            @Override
+            public String apply(@Nullable ImmutableList<String> line) {
+              if (line == null) {
+                return null;
+              }
+              return Joiner.on(' ').join(
+                  FluentIterable.from(line).transform(Escaper.javacEscaper()));
+            }
+          });
+    }
+
+    public static class Builder {
+      private final ImmutableList.Builder<ImmutableList<String>> builder;
+
+      private Builder() {
+        // Seeding the args builder with the default args
+        builder = ImmutableList.<ImmutableList<String>>builder().addAll(DEFAULT_ARGS);
+      }
+
+      public Builder addArg(String option) {
+        builder.add(ImmutableList.of(option));
+        return this;
+      }
+
+      public Builder addArg(String option, String... params) {
+        builder.add(ImmutableList.<String>builder().add(option).add(params).build());
+        return this;
+      }
+
+      public Builder addArg(String option, Iterable<String> joinedParams) {
+        builder.add(ImmutableList.of(option, Joiner.on(':').join(joinedParams)));
+        return this;
+      }
+
+      public Builder addArg(String option, String firstParam, Iterable<String> joinedParams) {
+        builder.add(ImmutableList.of(option, firstParam, Joiner.on(':').join(joinedParams)));
+        return this;
+      }
+
+      public JavadocArgs build() {
+        return new JavadocArgs(builder.build());
+      }
+    }
+  }
+
   private static class JavadocStep extends ShellStep {
-
-    //private final String jdkDocsUrl = "http://docs.oracle.com/javase/8/docs/api";
-    //       command.add("-tag").add("onos.rsModel:a:\"onos model\"");
-
-    private final String windowTitle;
-    private final List<String> subpackages;
-    private final List<String> sourcepaths;
-    private final List<String> classpath;
-    private final List<String> tags;
-    private final List<String> linkUrls;
-    private final List<String> sources;
+    private final ProjectFilesystem filesystem;
+    private final List<Path> sources;
+    private final JavadocArgs javadocArgs;
+    private final Path pathToArgsList;
+    private final Path pathToSrcsList;
 
     public JavadocStep(
+        ProjectFilesystem filesystem,
         Path workingDirectory,
-        String windowTitle,
-        List<String> subpackages,
-        List<String> sourcepaths,
-        List<String> classpath,
-        List<String> tags,
-        List<String> linkUrls,
-        List<String> sources) {
+        List<Path> sources,
+        JavadocArgs javadocArgs,
+        Path pathToArgsList,
+        Path pathToSrcsList) {
       super(workingDirectory);
-      this.windowTitle = windowTitle;
-      this.subpackages = subpackages;
-      this.sourcepaths = sourcepaths;
-      this.classpath = classpath;
-      this.tags = tags;
-      this.linkUrls = linkUrls;
+      this.filesystem = filesystem;
       this.sources = sources;
+      this.pathToArgsList = pathToArgsList;
+      this.pathToSrcsList = pathToSrcsList;
+      this.javadocArgs = javadocArgs;
+    }
+
+    @Override
+    public StepExecutionResult execute(ExecutionContext context) throws InterruptedException, IOException {
+      // Write the args file
+      filesystem.writeLinesToPath(javadocArgs.getLines(), pathToArgsList);
+
+      // Write the sources file
+      filesystem.writeLinesToPath(
+          FluentIterable.from(sources)
+              .transform(Functions.toStringFunction())
+              .transform(Escaper.javacEscaper()),
+          pathToSrcsList);
+
+      // Run the "javadoc" command
+      return super.execute(context);
     }
 
     @Override
     protected ImmutableList<String> getShellCommandInternal(ExecutionContext context) {
-      ImmutableList.Builder<String> command = ImmutableList.<String>builder()
+      return ImmutableList.<String>builder()
           .add("javadoc")
-          .add("-quiet")
-          .add("-protected")
-          .add("-encoding", "UTF-8")
-          .add("-charset", "UTF-8")
-          .add("-notimestamp");
-
-      addArg(command, "-windowtitle", windowTitle);
-
-      addRepeatingArg(command, "-link", linkUrls);
-      addRepeatingArg(command, "-tag", tags);
-
-      addJoinedArg(command, "-subpackages", ':', subpackages);
-      addJoinedArg(command, "-sourcepath", ':', sourcepaths);
-      addJoinedArg(command, "-classpath", ':', classpath);
-
-      addRepeatingArg(command, null, sources);
-
-      return command.build();
-    }
-
-    private static void addArg(ImmutableList.Builder<String> builder, String option, String param) {
-      if (option != null) {
-        builder.add(option);
-      }
-      if (param != null) {
-        builder.add(param);
-      }
-    }
-
-    private static void addRepeatingArg(ImmutableList.Builder<String> builder, String option,
-                                        List<String> params) {
-      if (params != null) {
-        for (String param : params) {
-          addArg(builder, option, param);
-        }
-      }
-    }
-
-    private static void addJoinedArg(ImmutableList.Builder<String> builder, String option,
-                                     char separator, List<String> params) {
-      if (params != null && !params.isEmpty()) {
-        builder.add(option);
-        builder.add(Joiner.on(separator).join(params));
-      }
+          .add("@" + pathToArgsList.toAbsolutePath())
+          .add("@" + pathToSrcsList.toAbsolutePath())
+          .build();
     }
 
     @Override
