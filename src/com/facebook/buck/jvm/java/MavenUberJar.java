@@ -33,6 +33,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
@@ -205,10 +206,12 @@ public class MavenUberJar extends AbstractBuildRule implements MavenPublishable 
     public MavenJavadocJar(
         BuildRuleParams params,
         SourcePathResolver resolver,
-        ImmutableSortedSet<SourcePath> srcs,
+        ImmutableSortedSet<SourcePath> topLevelSrcs,
+        ImmutableSortedMap<SourcePath, Path> docFiles,
+        JavadocArgs javadocArgs,
         Optional<String> mavenCoords,
         TraversedDeps traversedDeps) {
-      super(params, resolver, srcs, mavenCoords);
+      super(params, resolver, topLevelSrcs, docFiles, javadocArgs, mavenCoords);
       this.traversedDeps = traversedDeps;
     }
 
@@ -216,10 +219,10 @@ public class MavenUberJar extends AbstractBuildRule implements MavenPublishable 
         BuildRuleParams params,
         final SourcePathResolver resolver,
         ImmutableSortedSet<SourcePath> topLevelSrcs,
+        ImmutableSortedMap<SourcePath, Path> docFiles,
+        JavadocArgs javadocArgs,
         Optional<String> mavenCoords) {
       TraversedDeps traversedDeps = TraversedDeps.traverse(params.getDeps());
-
-//      params = adjustParams(params, traversedDeps);
 
       ImmutableSortedSet<SourcePath> sourcePaths =
           FluentIterable
@@ -238,6 +241,8 @@ public class MavenUberJar extends AbstractBuildRule implements MavenPublishable 
           params,
           resolver,
           sourcePaths,
+          docFiles,
+          javadocArgs,
           mavenCoords,
           traversedDeps);
     }

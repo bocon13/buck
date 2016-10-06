@@ -42,6 +42,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 
@@ -81,7 +82,7 @@ public class JavaLibraryDescription implements Description<JavaLibraryDescriptio
   public <A extends Arg> BuildRule createBuildRule(
       TargetGraph targetGraph,
       BuildRuleParams params,
-      BuildRuleResolver resolver,
+      final BuildRuleResolver resolver,
       A args) {
     SourcePathResolver pathResolver = new SourcePathResolver(resolver);
     BuildTarget target = params.getBuildTarget();
@@ -124,6 +125,14 @@ public class JavaLibraryDescription implements Description<JavaLibraryDescriptio
       }
     }
 
+    JavacOptions javacOptions = JavacOptionsFactory.create(
+        defaultOptions,
+        params,
+        resolver,
+        pathResolver,
+        args
+    );
+
     if (flavors.contains(JavaLibrary.JAVADOC_JAR)) {
       args.mavenCoords = args.mavenCoords.transform(
           new Function<String, String>() {
@@ -133,28 +142,42 @@ public class JavaLibraryDescription implements Description<JavaLibraryDescriptio
             }
           });
 
+      JavadocJar.JavadocArgs.Builder javadocArgs = JavadocJar.JavadocArgs.builder()
+          .addArg("-windowtitle", target.getShortName())
+          .addJavaSELink(javacOptions.getSourceLevel());
+
+      if (args.javadocArgs.isPresent()) {
+        for (String line : args.javadocArgs.get()) {
+          javadocArgs.addArgLine(line);
+        }
+      }
+
+      final ImmutableSortedMap.Builder<SourcePath, Path> javadocFiles = ImmutableSortedMap.naturalOrder();
+      if (args.javadocFiles.isPresent()) {
+        for (SourcePath path : args.javadocFiles.get()) {
+          javadocFiles.put(path,
+              JavadocJar.getDocfileWithPath(pathResolver, path, args.javadocFilesRoot.orNull()));
+        }
+      }
+
       if (!flavors.contains(JavaLibrary.MAVEN_JAR)) {
         return new JavadocJar(
             params,
             pathResolver,
             args.srcs.get(),
+            javadocFiles.build(),
+            javadocArgs.build(),
             args.mavenCoords);
       } else {
         return MavenUberJar.MavenJavadocJar.create(
             Preconditions.checkNotNull(paramsWithMavenFlavor),
             pathResolver,
             args.srcs.get(),
+            javadocFiles.build(),
+            javadocArgs.build(),
             args.mavenCoords);
       }
     }
-
-    JavacOptions javacOptions = JavacOptionsFactory.create(
-        defaultOptions,
-        params,
-        resolver,
-        pathResolver,
-        args
-    );
 
     BuildTarget abiJarTarget = params.getBuildTarget().withAppendedFlavors(CalculateAbi.FLAVOR);
 
@@ -199,7 +222,7 @@ public class JavaLibraryDescription implements Description<JavaLibraryDescriptio
             params,
             new BuildTargetSourcePath(defaultJavaLibrary.getBuildTarget())));
 
-  if (!flavors.contains(JavaLibrary.MAVEN_JAR)) {
+    if (!flavors.contains(JavaLibrary.MAVEN_JAR)) {
       return defaultJavaLibrary;
     } else {
       return MavenUberJar.create(
@@ -227,6 +250,10 @@ public class JavaLibraryDescription implements Description<JavaLibraryDescriptio
     public Optional<ImmutableSortedSet<BuildTarget>> providedDeps;
     public Optional<ImmutableSortedSet<BuildTarget>> exportedDeps;
     public Optional<ImmutableSortedSet<BuildTarget>> deps;
+
+    public Optional<ImmutableList<String>> javadocArgs;
+    public Optional<ImmutableSortedSet<SourcePath>> javadocFiles;
+    public Optional<Path> javadocFilesRoot;
 
     @Hint(isDep = false) public Optional<ImmutableSortedSet<BuildTarget>> tests;
 

@@ -21,10 +21,9 @@ import static com.facebook.buck.zip.ZipCompressionLevel.DEFAULT_COMPRESSION_LEVE
 import com.facebook.buck.io.ProjectFilesystem;
 import com.facebook.buck.model.BuildTarget;
 import com.facebook.buck.model.BuildTargets;
-import com.facebook.buck.model.Pair;
+import com.facebook.buck.rules.AbstractBuildRule;
 import com.facebook.buck.rules.AddToRuleKey;
 import com.facebook.buck.rules.BuildContext;
-import com.facebook.buck.rules.BuildRule;
 import com.facebook.buck.rules.BuildRuleParams;
 import com.facebook.buck.rules.BuildableContext;
 import com.facebook.buck.rules.SourcePath;
@@ -33,6 +32,7 @@ import com.facebook.buck.shell.ShellStep;
 import com.facebook.buck.step.ExecutionContext;
 import com.facebook.buck.step.Step;
 import com.facebook.buck.step.StepExecutionResult;
+import com.facebook.buck.step.fs.CopyStep;
 import com.facebook.buck.step.fs.MakeCleanDirectoryStep;
 import com.facebook.buck.step.fs.MkdirStep;
 import com.facebook.buck.step.fs.RmStep;
@@ -44,44 +44,55 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.hash.HashCode;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
+import java.nio.file.Paths;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
-public class JavadocJar extends AbstractJavaLibrary {
+public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates, HasSources {
 
   @AddToRuleKey
-  private final ImmutableSortedSet<SourcePath> sources;
+  private final ImmutableSortedSet<SourcePath> sourceFiles;
+
+  private final ImmutableSortedMap<SourcePath, Path> docFiles;
+
+  @AddToRuleKey
+  // We only need the source paths to be part of the key.
+  private final ImmutableSortedSet<SourcePath> docFilesSources;
+
+  @AddToRuleKey
+  private final Optional<String> mavenCoords;
+
+  //FIXME this needs to be added to the rule key
+  @AddToRuleKey(stringify = true)
+  private final JavadocArgs javadocArgs;
 
   private final Path output;
   private final Path temp;
-  private Optional<ImmutableList<Pair<String, ImmutableList<String>>>> groups = Optional.absent();
+  private final Path docFilesStaging;
 
   public JavadocJar(
       BuildRuleParams params,
       SourcePathResolver resolver,
-      ImmutableSortedSet<SourcePath> sources,
+      ImmutableSortedSet<SourcePath> sourceFiles,
+      ImmutableSortedMap<SourcePath, Path> docFiles,
+      JavadocArgs javadocArgs,
       Optional<String> mavenCoords) {
-    super(params,
-        resolver,
-        sources,
-          /* resources */ ImmutableSet.<SourcePath>of(),
-          /* generated source folder */ Optional.<Path>absent(),
-          /* exported deps */ ImmutableSortedSet.<BuildRule>of(),
-          /* provided deps */ ImmutableSortedSet.<BuildRule>of(),
-          /* additional classpath entries */ ImmutableSet.<Path>of(),
-          /* resources root */ Optional.<Path>absent(),
-        mavenCoords
-    );
-    this.sources = sources;
+    super(params, resolver);
+    this.sourceFiles = sourceFiles;
+    this.mavenCoords = mavenCoords;
+    this.docFiles = docFiles;
+    this.javadocArgs = javadocArgs;
+    this.docFilesSources = docFiles.keySet();
+
     BuildTarget target = params.getBuildTarget();
     this.output = getProjectFilesystem().getRootPath().getFileSystem().getPath(
         String.format(
@@ -91,10 +102,21 @@ public class JavadocJar extends AbstractJavaLibrary {
             target.getShortName()));
 
     this.temp = BuildTargets.getScratchPath(getProjectFilesystem(), target, "%s-javadoc");
+    this.docFilesStaging = BuildTargets.getScratchPath(getProjectFilesystem(), target, "%s-docfiles");
   }
 
-  public void setGroups(Optional<ImmutableList<Pair<String, ImmutableList<String>>>> groups) {
-    this.groups = groups;
+  public ImmutableSortedMap<SourcePath, Path> getDocFiles() {
+    return docFiles;
+  }
+
+  public static Path getDocfileWithPath(SourcePathResolver resolver,
+                                                          SourcePath sourcePath, Path basePath) {
+    Path src = resolver.getRelativePath(sourcePath);
+    if (basePath != null) {
+      return basePath.relativize(src);
+    } else {
+      return Paths.get("doc-files").resolve(src.getFileName());
+    }
   }
 
   @Override
@@ -105,8 +127,27 @@ public class JavadocJar extends AbstractJavaLibrary {
     steps.add(new MkdirStep(getProjectFilesystem(), output.getParent()));
     steps.add(new RmStep(getProjectFilesystem(), output, /* force deletion */ true));
     steps.add(new MakeCleanDirectoryStep(getProjectFilesystem(), temp));
+    steps.add(new MakeCleanDirectoryStep(getProjectFilesystem(), docFilesStaging));
 
-    ImmutableList<Path> srcs = FluentIterable.from(sources)
+    for (Map.Entry<SourcePath, Path> pair : docFiles.entrySet()) {
+      Path src = getResolver().getRelativePath(pair.getKey());
+      Path dest = docFilesStaging.resolve(pair.getValue());
+      steps.add(new MkdirStep(getProjectFilesystem(), dest.getParent()));
+      steps.add(CopyStep.forFile(getProjectFilesystem(), src, dest));
+    }
+
+    Path pathToArgsList =
+        BuildTargets.getGenPath(getProjectFilesystem(), getBuildTarget(), "__%s__args");
+    Path pathToClasspath =
+        BuildTargets.getGenPath(getProjectFilesystem(), getBuildTarget(), "__%s__classpath");
+    Path pathToSrcsList =
+        BuildTargets.getGenPath(getProjectFilesystem(), getBuildTarget(), "__%s__srcs");
+    // args list, classpath and sources list will share a parent directory
+    steps.add(new MkdirStep(getProjectFilesystem(), pathToSrcsList.getParent()));
+
+    //TODO consider moving this inside of the JavadocStep
+    ImmutableList<Path> srcs = FluentIterable.from(sourceFiles)
+        //TODO this step may be done for us by the "javadoc" tool already
         .filter(new Predicate<SourcePath>() {
           @Override
           public boolean apply(@Nullable SourcePath input) {
@@ -120,44 +161,17 @@ public class JavadocJar extends AbstractJavaLibrary {
           }
         }).toList();
 
-    ImmutableList<String> classpath = FluentIterable.from(getDeclaredClasspathEntries().values())
-        .transform(new Function<Path, String>() {
-          @Nullable
-          @Override
-          public String apply(@Nullable Path input) {
-            return input != null ? input.toAbsolutePath().toString() : null;
-          }
-        }).toList();
-
-    Path pathToArgsList =
-        BuildTargets.getGenPath(getProjectFilesystem(), getBuildTarget(), "__%s__args");
-    Path pathToSrcsList =
-        BuildTargets.getGenPath(getProjectFilesystem(), getBuildTarget(), "__%s__srcs");
-    // args and sources list will share a parent directory
-    steps.add(new MkdirStep(getProjectFilesystem(), pathToSrcsList.getParent()));
-
-    //----------------------------- consider moving this up to the constructor ---------------------
-    JavadocArgs.Builder javadocArgs = JavadocArgs.builder()
-        .addArg("-windowtitle", getBuildTarget().getShortName()) //FIXME what is the actual title that we want? this is name of target
-        .addArg("-link", "http://docs.oracle.com/javase/8/docs/api") //FIXME from buckconfig + rule
-        .addArg("-tag", "onos.rsModel:a:\"onos model\"") //FIXME from buckconfig + rule
-        .addArg("-classpath", classpath);
-
-    if (groups.isPresent()) {
-      for (Pair<String, ImmutableList<String>> pair : groups.get()) {
-        javadocArgs.addArg("-group", pair.getFirst(), pair.getSecond());
-      }
-    }
-    //----------------------------- end block ------------------------------------------------------
-
     steps.add(new JavadocStep(
         getProjectFilesystem(),
         temp,
         srcs,
-        javadocArgs.build(),
+        ImmutableSortedSet.copyOf(
+            JavaLibraryClasspathProvider.getClasspathEntries(getDeps()).values()),
+        javadocArgs,
         pathToArgsList,
-        pathToSrcsList
-    ));
+        pathToClasspath,
+        pathToSrcsList,
+        docFilesStaging));
 
     steps.add(
         new ZipStep(
@@ -175,17 +189,7 @@ public class JavadocJar extends AbstractJavaLibrary {
 
   @Override
   public ImmutableSortedSet<SourcePath> getSources() {
-    return sources;
-  }
-
-  @Override
-  public ImmutableSortedSet<SourcePath> getResources() {
-    return ImmutableSortedSet.of(); //FIXME BOC
-  }
-
-  @Override
-  public Optional<Path> getGeneratedSourcePath() {
-    return null;
+    return sourceFiles;
   }
 
   @Override
@@ -198,16 +202,6 @@ public class JavadocJar extends AbstractJavaLibrary {
     return mavenCoords;
   }
 
-  @Override
-  public Optional<SourcePath> getAbiJar() {
-    return Optional.absent(); //FIXME BOC
-  }
-
-  @Override
-  public ImmutableSortedMap<String, HashCode> getClassNamesToHashes() {
-    return ImmutableSortedMap.of(); //FIXME BOC
-  }
-
   public static class JavadocArgs {
     private static final ImmutableList<ImmutableList<String>> DEFAULT_ARGS =
         ImmutableList.of(
@@ -217,7 +211,7 @@ public class JavadocJar extends AbstractJavaLibrary {
           ImmutableList.of("-charset", "UTF-8"),
           ImmutableList.of("-notimestamp")
         );
-//    private static final String JAVA_SE_LINK_FORMAT = "http://docs.oracle.com/javase/%d/docs/api";
+    private static final String JAVA_SE_LINK_FORMAT = "http://docs.oracle.com/javase/%d/docs/api";
 
     private final ImmutableList<ImmutableList<String>> args;
 
@@ -235,13 +229,15 @@ public class JavadocJar extends AbstractJavaLibrary {
             @Nullable
             @Override
             public String apply(@Nullable ImmutableList<String> line) {
-              if (line == null) {
-                return null;
-              }
-              return Joiner.on(' ').join(
-                  FluentIterable.from(line).transform(Escaper.javacEscaper()));
+              return line != null ?
+                  Joiner.on(' ').join(FluentIterable.from(line).transform(Escaper.javacEscaper())) : null;
             }
           });
+    }
+
+    @Override
+    public String toString() {
+      return args.toString();
     }
 
     public static class Builder {
@@ -272,6 +268,20 @@ public class JavadocJar extends AbstractJavaLibrary {
         return this;
       }
 
+      public Builder addArgLine(String line) {
+        builder.add(ImmutableList.copyOf(line.split("\\s+")));
+        return this;
+      }
+
+      public Builder addJavaSELink(String sourceVersion) {
+        int javaVersion = Integer.parseInt(sourceVersion);
+        if (javaVersion < 6) {
+          throw new RuntimeException("Java version is less than 1.6");
+        }
+        addArg("-link", String.format(JAVA_SE_LINK_FORMAT, javaVersion));
+        return this;
+      }
+
       public JavadocArgs build() {
         return new JavadocArgs(builder.build());
       }
@@ -280,30 +290,53 @@ public class JavadocJar extends AbstractJavaLibrary {
 
   private static class JavadocStep extends ShellStep {
     private final ProjectFilesystem filesystem;
-    private final List<Path> sources;
+    private final ImmutableList<Path> sources;
+    private final ImmutableCollection<Path> classpath;
     private final JavadocArgs javadocArgs;
     private final Path pathToArgsList;
+    private final Path pathToClasspath;
     private final Path pathToSrcsList;
+    private final Path pathToDocfiles;
 
     public JavadocStep(
         ProjectFilesystem filesystem,
         Path workingDirectory,
-        List<Path> sources,
+        ImmutableList<Path> sources,
+        ImmutableCollection<Path> classpath,
         JavadocArgs javadocArgs,
         Path pathToArgsList,
-        Path pathToSrcsList) {
+        Path pathToClasspath,
+        Path pathToSrcsList,
+        Path pathToDocfiles) {
       super(workingDirectory);
       this.filesystem = filesystem;
       this.sources = sources;
+      this.classpath = classpath;
       this.pathToArgsList = pathToArgsList;
+      this.pathToClasspath = pathToClasspath;
       this.pathToSrcsList = pathToSrcsList;
       this.javadocArgs = javadocArgs;
+      this.pathToDocfiles = pathToDocfiles;
     }
 
     @Override
     public StepExecutionResult execute(ExecutionContext context) throws InterruptedException, IOException {
       // Write the args file
       filesystem.writeLinesToPath(javadocArgs.getLines(), pathToArgsList);
+
+      // Write the classpath file
+      filesystem.writeContentsToPath("-classpath " +
+          Joiner.on(':').join(FluentIterable.from(classpath)
+              .transform(new Function<Path, String>() {
+                @Nullable
+                @Override
+                public String apply(@Nullable Path input) {
+                  return input != null ? input.toAbsolutePath().toString() : null;
+                }
+              })
+              .transform(Escaper.javacEscaper())),
+          pathToClasspath
+      );
 
       // Write the sources file
       filesystem.writeLinesToPath(
@@ -320,7 +353,9 @@ public class JavadocJar extends AbstractJavaLibrary {
     protected ImmutableList<String> getShellCommandInternal(ExecutionContext context) {
       return ImmutableList.<String>builder()
           .add("javadoc")
+          .add("-sourcepath").add(pathToDocfiles.toAbsolutePath().toString())
           .add("@" + pathToArgsList.toAbsolutePath())
+          .add("@" + pathToClasspath.toAbsolutePath())
           .add("@" + pathToSrcsList.toAbsolutePath())
           .build();
     }
