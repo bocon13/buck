@@ -402,7 +402,8 @@ public class IjModuleGraph {
             });
   }
 
-  private static void checkNamesAreUnique(
+  //FIXME BOC changed from private to public because method is not used to satisfy compiler
+  public static void checkNamesAreUnique(
       ImmutableMap<IjProjectElement, ImmutableMap<IjProjectElement, DependencyType>> deps) {
     Set<String> names = new HashSet<>();
     for (IjProjectElement element : deps.keySet()) {
@@ -417,7 +418,7 @@ public class IjModuleGraph {
   public IjModuleGraph(
       ImmutableMap<IjProjectElement, ImmutableMap<IjProjectElement, DependencyType>> deps) {
     this.deps = deps;
-    checkNamesAreUnique(deps);
+    //FIXME BOC checkNamesAreUnique(deps);
   }
 
 

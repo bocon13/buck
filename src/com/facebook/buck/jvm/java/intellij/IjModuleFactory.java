@@ -64,9 +64,10 @@ public class IjModuleFactory {
       CxxLibraryDescription.TYPE,
       JavaLibraryDescription.TYPE,
       JavaTestDescription.TYPE,
-      RobolectricTestDescription.TYPE);
+      RobolectricTestDescription.TYPE,
+      BuildRuleType.of("onos_jar"));
 
-  public static final Predicate<TargetNode<?>> SUPPORTED_MODULE_TYPES_PREDICATE =
+  public static final Predicate<TargetNode<?>>  SUPPORTED_MODULE_TYPES_PREDICATE =
       new Predicate<TargetNode<?>>() {
         @Override
         public boolean apply(TargetNode<?> input) {
@@ -309,6 +310,7 @@ public class IjModuleFactory {
     addToIndex(new JavaLibraryModuleRule());
     addToIndex(new JavaTestModuleRule());
     addToIndex(new RobolectricTestModuleRule());
+    addToIndex(new OnosJarModuleRule());
 
     this.moduleFactoryResolver = moduleFactoryResolver;
 
@@ -636,6 +638,13 @@ public class IjModuleFactory {
           getSourceFoldersToInputsIndex(target.getInputs()),
           false /* wantsPackagePrefix */,
           context);
+    }
+  }
+
+  private class OnosJarModuleRule extends JavaLibraryModuleRule {
+    @Override
+    public BuildRuleType getType() {
+      return BuildRuleType.of("onos_jar");
     }
   }
 
