@@ -19,7 +19,9 @@ package com.facebook.buck.rules;
 import com.facebook.buck.android.FakeAndroidDirectoryResolver;
 import com.facebook.buck.cli.BuckConfig;
 import com.facebook.buck.cli.FakeBuckConfig;
+import com.facebook.buck.cli.PluginConfig;
 import com.facebook.buck.io.ProjectFilesystem;
+import com.facebook.buck.plugin.PluginManager;
 import com.facebook.buck.util.FakeProcess;
 import com.facebook.buck.util.FakeProcessExecutor;
 import com.facebook.buck.util.ProcessExecutorParams;
@@ -96,7 +98,8 @@ public class DefaultKnownBuildRuleTypes {
                 .put(XCODE_SELECT_PARAMS, XCODE_SELECT_PROCESS)
                 .putAll(getPythonProcessMap(paths))
                 .build()),
-        new FakeAndroidDirectoryResolver());
+        new FakeAndroidDirectoryResolver(),
+        new PluginManager(new PluginConfig(config)));
   }
 
 }

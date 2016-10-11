@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNotEquals;
 import com.facebook.buck.android.FakeAndroidDirectoryResolver;
 import com.facebook.buck.cli.BuckConfig;
 import com.facebook.buck.cli.FakeBuckConfig;
+import com.facebook.buck.cli.PluginConfig;
 import com.facebook.buck.cxx.CxxPlatform;
 import com.facebook.buck.cxx.CxxPlatformUtils;
 import com.facebook.buck.io.MorePaths;
@@ -32,6 +33,7 @@ import com.facebook.buck.jvm.java.JavaLibraryDescription;
 import com.facebook.buck.model.BuildTarget;
 import com.facebook.buck.model.BuildTargetFactory;
 import com.facebook.buck.model.FlavorDomain;
+import com.facebook.buck.plugin.PluginManager;
 import com.facebook.buck.rules.keys.DefaultRuleKeyBuilderFactory;
 import com.facebook.buck.testutil.FakeFileHashCache;
 import com.facebook.buck.testutil.integration.TemporaryPaths;
@@ -178,7 +180,8 @@ public class KnownBuildRuleTypesTest {
     KnownBuildRuleTypes configuredBuildRuleTypes = KnownBuildRuleTypes.createBuilder(
         buckConfig,
         processExecutor,
-        new FakeAndroidDirectoryResolver())
+        new FakeAndroidDirectoryResolver(),
+        new PluginManager(new PluginConfig(buckConfig)))
         .build();
     DefaultJavaLibrary configuredRule = createJavaLibrary(configuredBuildRuleTypes);
 
@@ -239,16 +242,18 @@ public class KnownBuildRuleTypesTest {
   @Test
   public void createInstanceShouldReturnDifferentInstancesIfCalledWithDifferentParameters()
       throws Exception {
+    BuckConfig buckConfig1 = FakeBuckConfig.builder().build();
     KnownBuildRuleTypes knownBuildRuleTypes1 = KnownBuildRuleTypes.createInstance(
-        FakeBuckConfig.builder().build(),
+        buckConfig1,
         createExecutor(),
-        new FakeAndroidDirectoryResolver());
+        new FakeAndroidDirectoryResolver(),
+        new PluginManager(new PluginConfig(buckConfig1)));
 
     final Path javac = temporaryFolder.newExecutableFile();
     ProjectFilesystem filesystem = new ProjectFilesystem(temporaryFolder.getRoot());
     ImmutableMap<String, ImmutableMap<String, String>> sections = ImmutableMap.of(
         "tools", ImmutableMap.of("javac", javac.toString()));
-    BuckConfig buckConfig = FakeBuckConfig
+    BuckConfig buckConfig2 = FakeBuckConfig
         .builder()
         .setFilesystem(filesystem)
         .setSections(sections)
@@ -257,9 +262,10 @@ public class KnownBuildRuleTypesTest {
     ProcessExecutor processExecutor = createExecutor(javac.toString(), "");
 
     KnownBuildRuleTypes knownBuildRuleTypes2 = KnownBuildRuleTypes.createInstance(
-        buckConfig,
+        buckConfig2,
         processExecutor,
-        new FakeAndroidDirectoryResolver());
+        new FakeAndroidDirectoryResolver(),
+        new PluginManager(new PluginConfig(buckConfig2)));
 
     assertNotEquals(knownBuildRuleTypes1, knownBuildRuleTypes2);
   }
@@ -274,7 +280,8 @@ public class KnownBuildRuleTypesTest {
     KnownBuildRuleTypes.createBuilder(
         buckConfig,
         createExecutor(),
-        new FakeAndroidDirectoryResolver()).build();
+        new FakeAndroidDirectoryResolver(),
+        new PluginManager(new PluginConfig(buckConfig))).build();
   }
 
   @Test
@@ -290,7 +297,8 @@ public class KnownBuildRuleTypesTest {
     KnownBuildRuleTypes.createBuilder(
         buckConfig,
         createExecutor(),
-        new FakeAndroidDirectoryResolver()).build();
+        new FakeAndroidDirectoryResolver(),
+        new PluginManager(new PluginConfig(buckConfig))).build();
   }
 
   private ProcessExecutor createExecutor() throws IOException {

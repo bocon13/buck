@@ -81,7 +81,7 @@ public class JavaLibraryDescription implements Description<JavaLibraryDescriptio
   public <A extends Arg> BuildRule createBuildRule(
       TargetGraph targetGraph,
       BuildRuleParams params,
-      final BuildRuleResolver resolver,
+      BuildRuleResolver resolver,
       A args) {
     SourcePathResolver pathResolver = new SourcePathResolver(resolver);
     BuildTarget target = params.getBuildTarget();
@@ -130,12 +130,7 @@ public class JavaLibraryDescription implements Description<JavaLibraryDescriptio
 
     if (flavors.contains(JavaLibrary.JAVADOC_JAR)) {
       args.mavenCoords = args.mavenCoords.transform(
-          new Function<String, String>() {
-            @Override
-            public String apply(String input) {
-              return AetherUtil.addClassifier(input, AetherUtil.CLASSIFIER_JAVADOC);
-            }
-          });
+         input -> AetherUtil.addClassifier(input, AetherUtil.CLASSIFIER_JAVADOC));
 
       JavadocJar.JavadocArgs.Builder javadocArgs = JavadocJar.JavadocArgs.builder()
           .addArg("-windowtitle", target.getShortName())

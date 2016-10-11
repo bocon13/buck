@@ -21,7 +21,6 @@ import com.facebook.buck.jvm.java.JavaLibrary;
 import com.facebook.buck.jvm.java.MavenPublishable;
 import com.facebook.buck.maven.Publisher;
 import com.facebook.buck.model.BuildTarget;
-import com.facebook.buck.model.Flavor;
 import com.facebook.buck.parser.BuildTargetSpec;
 import com.facebook.buck.parser.NoSuchBuildTargetException;
 import com.facebook.buck.parser.TargetNodeSpec;
@@ -238,14 +237,6 @@ public class PublishCommand extends BuildCommand {
                               .build());
                     }
                   }));
-
-    if (includeSource) {
-      addFlavorToSpecList(specs, JavaLibrary.SRC_JAR, builder);
-    }
-
-    if (includeJavadoc) {
-      addFlavorToSpecList(specs, JavaLibrary.JAVADOC_JAR, builder);
-    }
 
     return builder.build();
   }

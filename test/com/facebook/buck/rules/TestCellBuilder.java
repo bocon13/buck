@@ -22,11 +22,13 @@ import com.facebook.buck.android.AndroidDirectoryResolver;
 import com.facebook.buck.android.FakeAndroidDirectoryResolver;
 import com.facebook.buck.cli.BuckConfig;
 import com.facebook.buck.cli.FakeBuckConfig;
+import com.facebook.buck.cli.PluginConfig;
 import com.facebook.buck.config.CellConfig;
 import com.facebook.buck.io.ProjectFilesystem;
 import com.facebook.buck.io.Watchman;
 import com.facebook.buck.io.WatchmanDiagnosticCache;
 import com.facebook.buck.json.ProjectBuildFileParserFactory;
+import com.facebook.buck.plugin.PluginManager;
 import com.facebook.buck.testutil.FakeProjectFilesystem;
 import com.facebook.buck.testutil.TestConsole;
 import com.facebook.buck.util.ProcessExecutor;
@@ -93,7 +95,8 @@ public class TestCellBuilder {
 
     KnownBuildRuleTypesFactory typesFactory = new KnownBuildRuleTypesFactory(
         executor,
-        androidDirectoryResolver);
+        androidDirectoryResolver,
+        new PluginManager(new PluginConfig(config)));
 
     if (parserFactory == null) {
       return Cell.createRootCell(

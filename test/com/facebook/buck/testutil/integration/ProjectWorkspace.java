@@ -29,6 +29,7 @@ import com.dd.plist.NSObject;
 import com.facebook.buck.android.DefaultAndroidDirectoryResolver;
 import com.facebook.buck.cli.BuckConfig;
 import com.facebook.buck.cli.Main;
+import com.facebook.buck.cli.PluginConfig;
 import com.facebook.buck.cli.TestRunning;
 import com.facebook.buck.config.CellConfig;
 import com.facebook.buck.config.Config;
@@ -44,6 +45,7 @@ import com.facebook.buck.model.BuckVersion;
 import com.facebook.buck.model.BuildId;
 import com.facebook.buck.model.BuildTarget;
 import com.facebook.buck.model.BuildTargetFactory;
+import com.facebook.buck.plugin.PluginManager;
 import com.facebook.buck.rules.Cell;
 import com.facebook.buck.rules.DefaultCellPathResolver;
 import com.facebook.buck.rules.KnownBuildRuleTypesFactory;
@@ -610,20 +612,23 @@ public class ProjectWorkspace {
         env,
         Optional.absent(),
         Optional.absent());
+    BuckConfig buckConfig = new BuckConfig(
+        config,
+        filesystem,
+        Architecture.detect(),
+        Platform.detect(),
+        env,
+        new DefaultCellPathResolver(filesystem.getRootPath(), config));
+    PluginManager pluginManager = new PluginManager(new PluginConfig(buckConfig));
     return Cell.createRootCell(
         filesystem,
         Watchman.NULL_WATCHMAN,
-        new BuckConfig(
-            config,
-            filesystem,
-            Architecture.detect(),
-            Platform.detect(),
-            env,
-            new DefaultCellPathResolver(filesystem.getRootPath(), config)),
+        buckConfig,
         CellConfig.of(),
         new KnownBuildRuleTypesFactory(
             new ProcessExecutor(console),
-            directoryResolver),
+            directoryResolver,
+            pluginManager),
         new WatchmanDiagnosticCache());
   }
 

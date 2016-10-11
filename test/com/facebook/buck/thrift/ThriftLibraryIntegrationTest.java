@@ -21,6 +21,7 @@ import static org.junit.Assert.assertThat;
 import com.facebook.buck.android.FakeAndroidDirectoryResolver;
 import com.facebook.buck.cli.BuckConfig;
 import com.facebook.buck.cli.FakeBuckConfig;
+import com.facebook.buck.cli.PluginConfig;
 import com.facebook.buck.config.CellConfig;
 import com.facebook.buck.event.BuckEventBus;
 import com.facebook.buck.event.BuckEventBusFactory;
@@ -34,6 +35,7 @@ import com.facebook.buck.model.BuildTargetFactory;
 import com.facebook.buck.model.ImmutableFlavor;
 import com.facebook.buck.parser.Parser;
 import com.facebook.buck.parser.ParserConfig;
+import com.facebook.buck.plugin.PluginManager;
 import com.facebook.buck.rules.ActionGraphAndResolver;
 import com.facebook.buck.rules.ActionGraphCache;
 import com.facebook.buck.rules.BuildRule;
@@ -106,7 +108,8 @@ public class ThriftLibraryIntegrationTest {
         CellConfig.of(),
         new KnownBuildRuleTypesFactory(
             new ProcessExecutor(new TestConsole()),
-            new FakeAndroidDirectoryResolver()),
+            new FakeAndroidDirectoryResolver(),
+            new PluginManager(new PluginConfig(config))),
         new WatchmanDiagnosticCache());
     BuildTarget target = BuildTargetFactory.newInstance(filesystem, "//thrift:exe");
     TargetGraph targetGraph = parser.buildTargetGraph(
