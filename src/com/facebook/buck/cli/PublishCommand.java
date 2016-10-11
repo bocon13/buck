@@ -87,8 +87,6 @@ public class PublishCommand extends BuildCommand {
       usage = "Sign the artifacts")
   private boolean signArtifacts = false;
 
-  private BuckConfig config;
-
   @Override
   public int runWithoutHelp(CommandRunnerParams params) throws IOException, InterruptedException {
 
@@ -148,7 +146,7 @@ public class PublishCommand extends BuildCommand {
         params.getCell().getFilesystem(),
         Optional.fromNullable(remoteRepo),
         params.getConsole().getStdOut(), // FIXME BOC pass through better
-        config, // FIXME BOC pass through better
+        params.getBuckConfig(), // FIXME BOC pass through better
         dryRun,
         signArtifacts);
 
@@ -244,10 +242,5 @@ public class PublishCommand extends BuildCommand {
   @Override
   public String getShortDescription() {
     return "builds and publishes a library to a central repository";
-  }
-
-  //FIXME BOC hackcity
-  public void setBuckConfig(BuckConfig config) {
-    this.config = config;
   }
 }
