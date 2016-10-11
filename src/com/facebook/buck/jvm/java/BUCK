@@ -98,7 +98,6 @@ java_library(
 java_library(
   name = 'rules',
   srcs = [
-    'AbstractJavaLibrary.java',
     'BuiltInJavac.java',
     'CalculateAbi.java',
     'DefaultJavaLibrary.java',

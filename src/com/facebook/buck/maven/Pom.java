@@ -39,7 +39,6 @@ import org.apache.maven.model.IssueManagement;
 import org.apache.maven.model.License;
 import org.apache.maven.model.MailingList;
 import org.apache.maven.model.Model;
-import org.apache.maven.model.Parent;
 import org.apache.maven.model.Organization;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.Prerequisites;

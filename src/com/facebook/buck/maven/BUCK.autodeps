@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-#@# GENERATED FILE: DO NOT MODIFY 0c1df29c7da493d43b2892866d41fcba1853a92d #@#
-=======
-#@# GENERATED FILE: DO NOT MODIFY 92be67cceecd4dcdf1a6b8479b66221f3fe66bca #@#
->>>>>>> 4bb92a2... half baked attempt at adding documentation for sh_test
+#@# GENERATED FILE: DO NOT MODIFY 77dfb62d455e80c9bb9e781da1acb2715cd6ed2b #@#
 {
   "maven" : {
     "deps" : [

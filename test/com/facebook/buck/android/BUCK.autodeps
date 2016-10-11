@@ -1,4 +1,4 @@
-#@# GENERATED FILE: DO NOT MODIFY 0520abdb284648642fcd1f8e8bfc31a5966efcff #@#
+#@# GENERATED FILE: DO NOT MODIFY f2b4b81fdd280ace349602481fc4a8b929113f30 #@#
 {
   "aar-integration" : {
     "deps" : [
@@ -73,6 +73,7 @@
       "//src/com/facebook/buck/rules:build_rule",
       "//src/com/facebook/buck/rules:rule_key",
       "//src/com/facebook/buck/util:constants",
+      "//src/com/facebook/buck/util:exceptions",
       "//src/com/facebook/buck/util:io",
       "//src/com/facebook/buck/util:util",
       "//src/com/facebook/buck/util/sha1:sha1",

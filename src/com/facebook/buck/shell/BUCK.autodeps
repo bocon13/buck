@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-#@# GENERATED FILE: DO NOT MODIFY 103772d6873c440d95d4f5f570b2b0af4cc9c06b #@#
-=======
-#@# GENERATED FILE: DO NOT MODIFY 495492e577568dd00b7614222d6417c6f52bf5f9 #@#
->>>>>>> 4bb92a2... half baked attempt at adding documentation for sh_test
+#@# GENERATED FILE: DO NOT MODIFY a487b3f7fca721253e8866227a256ce390a0906a #@#
 {
   "rules" : {
     "deps" : [

@@ -16,6 +16,8 @@
 
 package com.facebook.buck.jvm.java;
 
+import static com.facebook.buck.jvm.java.JavaLibraryClasspathProvider.getClasspathDeps;
+import static com.facebook.buck.jvm.java.JavaLibraryClasspathProvider.getClasspathsFromLibraries;
 import static com.facebook.buck.zip.ZipCompressionLevel.DEFAULT_COMPRESSION_LEVEL;
 
 import com.facebook.buck.io.ProjectFilesystem;
@@ -94,13 +96,11 @@ public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates
     this.docFilesSources = docFiles.keySet();
 
     BuildTarget target = params.getBuildTarget();
-    this.output = getProjectFilesystem().getRootPath().getFileSystem().getPath(
-        String.format(
-            "%s/%s%s-javadoc.jar",
-            getProjectFilesystem().getBuckPaths().getGenDir(),
-            target.getBaseNameWithSlash(),
-            target.getShortName()));
-
+    this.output =
+        BuildTargets.getGenPath(
+            getProjectFilesystem(),
+            target,
+            "%s" + Javac.SRC_JAR);
     this.temp = BuildTargets.getScratchPath(getProjectFilesystem(), target, "%s-javadoc");
     this.docFilesStaging = BuildTargets.getScratchPath(getProjectFilesystem(), target, "%s-docfiles");
   }
@@ -161,12 +161,13 @@ public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates
           }
         }).toList();
 
+
+
     steps.add(new JavadocStep(
         getProjectFilesystem(),
         temp,
         srcs,
-        ImmutableSortedSet.copyOf(
-            JavaLibraryClasspathProvider.getClasspathEntries(getDeps()).values()),
+        getClasspathsFromLibraries(getClasspathDeps(getDeps())),
         javadocArgs,
         pathToArgsList,
         pathToClasspath,

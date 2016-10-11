@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-#@# GENERATED FILE: DO NOT MODIFY 447c4cdf33ec2a4b284f810fb2a02dc38c938342 #@#
-=======
-#@# GENERATED FILE: DO NOT MODIFY 99345be8444dcac22dd4b0da24e543b80d67e5be #@#
->>>>>>> 4bb92a2... half baked attempt at adding documentation for sh_test
+#@# GENERATED FILE: DO NOT MODIFY a377279b9524c39125996b8421afd2a442f44b7d #@#
 {
   "action_graph_cache" : {
     "deps" : [

@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 #@# GENERATED FILE: DO NOT MODIFY d498aa4c5aece4afa839c32fd6676f977d759241 #@#
-=======
-#@# GENERATED FILE: DO NOT MODIFY 7d0dc3de778e736e726fe6ac5fd6255d4b6c1264 #@#
->>>>>>> 4bb92a2... half baked attempt at adding documentation for sh_test
 {
   "BuckPaths" : {
     "deps" : [

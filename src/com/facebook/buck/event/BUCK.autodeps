@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-#@# GENERATED FILE: DO NOT MODIFY f0666fbda7df71390888400a31dbdf196a6031f1 #@#
-=======
-#@# GENERATED FILE: DO NOT MODIFY 230165188865b595d2b2bd3c8968eb25a98cd920 #@#
->>>>>>> 4bb92a2... half baked attempt at adding documentation for sh_test
+#@# GENERATED FILE: DO NOT MODIFY 4af3169f4572f35e3f32b549d80ff8522de3e08b #@#
 {
   "event" : {
     "deps" : [

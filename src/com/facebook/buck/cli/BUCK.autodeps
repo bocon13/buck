@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-#@# GENERATED FILE: DO NOT MODIFY 1e1cb7dc34635b3c98297254a877b6182b2a8df8 #@#
-=======
-#@# GENERATED FILE: DO NOT MODIFY 71f76a5ace73f8b2aca644c5c478a1999ba728ef #@#
->>>>>>> 4bb92a2... half baked attempt at adding documentation for sh_test
+#@# GENERATED FILE: DO NOT MODIFY 859ed19759e7abf00307a0d760a7d2cc64b90f4a #@#
 {
   "cli" : {
     "deps" : [
@@ -65,11 +61,7 @@
       "//src/com/facebook/buck/util:watchman",
       "//src/com/facebook/buck/util/environment:env-filter",
       "//src/com/facebook/buck/util/network:network",
-<<<<<<< HEAD
-      "//src/com/facebook/buck/util/network/offline:offline",
       "//src/com/facebook/buck/util/perf:perf",
-=======
->>>>>>> 4bb92a2... half baked attempt at adding documentation for sh_test
       "//src/com/facebook/buck/util/shutdown:shutdown",
       "//src/com/facebook/buck/util/versioncontrol:impl",
       "//src/com/facebook/buck/util/versioncontrol:versioncontrol",

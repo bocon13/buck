@@ -447,6 +447,12 @@ public class Genrule extends AbstractBuildRule
   }
 
   @Override
+  public Optional<Path> getPomTemplate() {
+    //FIXME BOC
+    return Optional.absent();
+  }
+
+  @Override
   public Optional<String> getMavenCoords() {
     return mavenCoords;
   }

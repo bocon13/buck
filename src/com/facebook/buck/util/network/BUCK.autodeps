@@ -1,19 +1,8 @@
-<<<<<<< HEAD
-#@# GENERATED FILE: DO NOT MODIFY 5d0b157e833c1bce014c0e066eab6ac5cb82832c #@#
-=======
-#@# GENERATED FILE: DO NOT MODIFY ceab7b86092293c584886d4dbcba255772c6653a #@#
->>>>>>> 4bb92a2... half baked attempt at adding documentation for sh_test
+#@# GENERATED FILE: DO NOT MODIFY 606da7477d16f3d3551059326d2096f50ad22065 #@#
 {
   "network" : {
     "deps" : [
-      "//src/com/facebook/buck/log:api",
-<<<<<<< HEAD
-      "//src/com/facebook/buck/util/concurrent:concurrent"
-=======
-      "//src/com/facebook/buck/util:exceptions",
-      "//src/com/facebook/buck/util:util",
-      "//third-party/java/jackson:jackson-core"
->>>>>>> 4bb92a2... half baked attempt at adding documentation for sh_test
+      "//src/com/facebook/buck/log:api"
     ],
     "exported_deps" : [
       "//src-gen:thrift",

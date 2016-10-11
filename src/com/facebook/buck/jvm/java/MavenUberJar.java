@@ -222,6 +222,7 @@ public class MavenUberJar extends AbstractBuildRule implements MavenPublishable 
   public static class MavenJavadocJar extends JavadocJar implements MavenPublishable {
 
     private final TraversedDeps traversedDeps;
+    private final Optional<SourcePath> mavenPomTemplate;
 
     public MavenJavadocJar(
         BuildRuleParams params,
@@ -230,9 +231,11 @@ public class MavenUberJar extends AbstractBuildRule implements MavenPublishable 
         ImmutableSortedMap<SourcePath, Path> docFiles,
         JavadocArgs javadocArgs,
         Optional<String> mavenCoords,
+        Optional<SourcePath> mavenPomTemplate,
         TraversedDeps traversedDeps) {
       super(params, resolver, topLevelSrcs, docFiles, javadocArgs, mavenCoords);
       this.traversedDeps = traversedDeps;
+      this.mavenPomTemplate = mavenPomTemplate;
     }
 
     public static MavenJavadocJar create(
@@ -241,7 +244,8 @@ public class MavenUberJar extends AbstractBuildRule implements MavenPublishable 
         ImmutableSortedSet<SourcePath> topLevelSrcs,
         ImmutableSortedMap<SourcePath, Path> docFiles,
         JavadocArgs javadocArgs,
-        Optional<String> mavenCoords) {
+        Optional<String> mavenCoords,
+        Optional<SourcePath> mavenPomTemplate) {
       TraversedDeps traversedDeps = TraversedDeps.traverse(params.getDeps());
 
       ImmutableSortedSet<SourcePath> sourcePaths =
@@ -264,6 +268,7 @@ public class MavenUberJar extends AbstractBuildRule implements MavenPublishable 
           docFiles,
           javadocArgs,
           mavenCoords,
+          mavenPomTemplate,
           traversedDeps);
     }
 
@@ -275,6 +280,11 @@ public class MavenUberJar extends AbstractBuildRule implements MavenPublishable 
     @Override
     public Iterable<BuildRule> getPackagedDependencies() {
       return traversedDeps.packagedDeps;
+    }
+
+    @Override
+    public Optional<Path> getPomTemplate() {
+      return mavenPomTemplate.transform(getResolver().getAbsolutePathFunction());
     }
   }
 

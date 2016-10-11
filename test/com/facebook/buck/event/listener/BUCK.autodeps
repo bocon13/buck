@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-#@# GENERATED FILE: DO NOT MODIFY b2a76be9ebc5676f5adec601d9d542a888d5b358 #@#
-=======
-#@# GENERATED FILE: DO NOT MODIFY 9c84478abd1cbb3d1d2ee80558f82f7ee6ca8dfa #@#
->>>>>>> 4bb92a2... half baked attempt at adding documentation for sh_test
+#@# GENERATED FILE: DO NOT MODIFY 796a4d2ee980f1ce5f15935d3aa817fe16f39922 #@#
 {
   "listener" : {
     "deps" : [
@@ -42,11 +38,7 @@
       "//src/com/facebook/buck/util/concurrent:concurrent",
       "//src/com/facebook/buck/util/environment:environment",
       "//src/com/facebook/buck/util/network:network",
-<<<<<<< HEAD
-      "//src/com/facebook/buck/util/network/offline:offline",
       "//src/com/facebook/buck/util/perf:perf",
-=======
->>>>>>> 4bb92a2... half baked attempt at adding documentation for sh_test
       "//src/com/facebook/buck/util/unit:unit",
       "//test/com/facebook/buck/cli:FakeBuckConfig",
       "//test/com/facebook/buck/event:testutil",
