@@ -170,7 +170,8 @@ public class JavaLibraryDescription implements Description<JavaLibraryDescriptio
             args.srcs.get(),
             javadocFiles.build(),
             javadocArgs.build(),
-            args.mavenCoords);
+            args.mavenCoords,
+            args.mavenPomTemplate);
       }
     }
 
