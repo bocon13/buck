@@ -241,7 +241,7 @@ public class DefaultJavaLibrary extends AbstractBuildRule
     // Exported deps are meant to be forwarded onto the CLASSPATH for dependents,
     // and so only make sense for java library types.
     for (BuildRule dep : exportedDeps) {
-      if (!(dep instanceof JavaLibrary)) {
+      if (!(dep instanceof JavaLibrary || dep instanceof JavaTest || dep instanceof PrebuiltJar)) {
         throw new HumanReadableException(
             params.getBuildTarget() + ": exported dep " +
             dep.getBuildTarget() + " (" + dep.getType() + ") " +
