@@ -66,6 +66,11 @@ public class PublishConfig {
     return delegate.getValue(PUBLISH_SECION, "pgp_pasword").or("").toCharArray();
   }
 
+  public Optional<String> getLocalRepo() {
+    return delegate.getValue(PUBLISH_SECION, "local_repo")
+        .or(Optional.fromNullable(System.getenv("M2_REPO")));
+  }
+
   /* FIXME BOC consider falling back to download config
   public Optional<String> getMavenRepo() {
     return delegate.getValue("download", "maven_repo");

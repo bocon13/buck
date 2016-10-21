@@ -56,6 +56,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -138,8 +139,6 @@ public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates
 
     Path pathToArgsList =
         BuildTargets.getGenPath(getProjectFilesystem(), getBuildTarget(), "__%s__args");
-    Path pathToClasspath =
-        BuildTargets.getGenPath(getProjectFilesystem(), getBuildTarget(), "__%s__classpath");
     Path pathToSrcsList =
         BuildTargets.getGenPath(getProjectFilesystem(), getBuildTarget(), "__%s__srcs");
     // args list, classpath and sources list will share a parent directory
@@ -161,8 +160,6 @@ public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates
           }
         }).toList();
 
-
-
     steps.add(new JavadocStep(
         getProjectFilesystem(),
         temp,
@@ -170,7 +167,6 @@ public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates
         getClasspathsFromLibraries(getClasspathDeps(getDeps())),
         javadocArgs,
         pathToArgsList,
-        pathToClasspath,
         pathToSrcsList,
         docFilesStaging));
 
@@ -295,7 +291,6 @@ public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates
     private final ImmutableCollection<Path> classpath;
     private final JavadocArgs javadocArgs;
     private final Path pathToArgsList;
-    private final Path pathToClasspath;
     private final Path pathToSrcsList;
     private final Path pathToDocfiles;
 
@@ -306,7 +301,6 @@ public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates
         ImmutableCollection<Path> classpath,
         JavadocArgs javadocArgs,
         Path pathToArgsList,
-        Path pathToClasspath,
         Path pathToSrcsList,
         Path pathToDocfiles) {
       super(workingDirectory);
@@ -314,7 +308,6 @@ public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates
       this.sources = sources;
       this.classpath = classpath;
       this.pathToArgsList = pathToArgsList;
-      this.pathToClasspath = pathToClasspath;
       this.pathToSrcsList = pathToSrcsList;
       this.javadocArgs = javadocArgs;
       this.pathToDocfiles = pathToDocfiles;
@@ -323,21 +316,17 @@ public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates
     @Override
     public StepExecutionResult execute(ExecutionContext context) throws InterruptedException, IOException {
       // Write the args file
-      filesystem.writeLinesToPath(javadocArgs.getLines(), pathToArgsList);
+      StringBuilder args = new StringBuilder();
+      javadocArgs.getLines().forEach(l -> args.append(l).append('\n'));
 
-      // Write the classpath file
-      filesystem.writeContentsToPath("-classpath " +
-          Joiner.on(':').join(FluentIterable.from(classpath)
-              .transform(new Function<Path, String>() {
-                @Nullable
-                @Override
-                public String apply(@Nullable Path input) {
-                  return input != null ? input.toAbsolutePath().toString() : null;
-                }
-              })
-              .transform(Escaper.javacEscaper())),
-          pathToClasspath
-      );
+      if (!classpath.isEmpty()) {
+        args.append("-classpath ");
+        args.append(
+            classpath.stream()
+                .map(p -> p != null ? Escaper.javacEscaper().apply(p.toAbsolutePath().toString()) : null)
+                .collect(Collectors.joining(":")));
+      }
+      filesystem.writeContentsToPath(args.toString(), pathToArgsList);
 
       // Write the sources file
       filesystem.writeLinesToPath(
@@ -356,7 +345,7 @@ public class JavadocJar extends AbstractBuildRule implements HasMavenCoordinates
           .add("javadoc")
           .add("-sourcepath").add(pathToDocfiles.toAbsolutePath().toString())
           .add("@" + pathToArgsList.toAbsolutePath())
-          .add("@" + pathToClasspath.toAbsolutePath())
+          //.add("@" + pathToClasspath.toAbsolutePath())
           .add("@" + pathToSrcsList.toAbsolutePath())
           .build();
     }

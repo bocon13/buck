@@ -42,6 +42,9 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.deployment.DeployRequest;
 import org.eclipse.aether.deployment.DeployResult;
 import org.eclipse.aether.deployment.DeploymentException;
+import org.eclipse.aether.installation.InstallRequest;
+import org.eclipse.aether.installation.InstallResult;
+import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.spi.locator.ServiceLocator;
@@ -54,6 +57,7 @@ import java.net.MalformedURLException;
 import java.net.PasswordAuthentication;
 import java.net.URL;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -75,6 +79,7 @@ public class Publisher {
   private final LocalRepository localRepo;
   private final RemoteRepository remoteRepo;
   private final boolean dryRun;
+  private final boolean localInstallOnly;
   private final boolean signArtifacts;
   private final PublishConfig config;
   //FIXME BOC requires refactor
@@ -94,15 +99,16 @@ public class Publisher {
       PrintStream console,
       BuckConfig config,
       boolean dryRun,
+      boolean localInstallOnly,
       boolean signArtifacts) {
-    this(repositoryFilesystem.getRootPath(), remoteRepoUrl, config, console, dryRun, signArtifacts);
+    this(repositoryFilesystem.getRootPath(), remoteRepoUrl, config, console, dryRun, localInstallOnly, signArtifacts);
   }
 
   public Publisher(
       Path localRepoPath,
       Optional<URL> remoteRepoUrl,
       boolean dryRun) {
-    this(localRepoPath, remoteRepoUrl, null, null, dryRun, false);
+    this(localRepoPath, remoteRepoUrl, null, null, dryRun, false, false);
   }
 
   /**
@@ -111,6 +117,7 @@ public class Publisher {
    * @param remoteRepoUrl Canonically {@link #MAVEN_CENTRAL_URL}
    * @param dryRun if true, a dummy {@link DeployResult} will be returned, with the fully
    *               constructed {@link DeployRequest}. No actual publishing will happen
+   * @param localInstallOnly FIXME BOC
    * @param signArtifacts FIXME
    */
   public Publisher(
@@ -119,14 +126,25 @@ public class Publisher {
       BuckConfig config,
       PrintStream console,
       boolean dryRun,
+      boolean localInstallOnly,
       boolean signArtifacts) {
 
     //FIXME careful about config NPE
     this.config = new PublishConfig(config);
     this.dryRun = dryRun;
+    this.localInstallOnly = localInstallOnly;
     this.signArtifacts = signArtifacts;
 
-    this.localRepo = new LocalRepository(localRepoPath.toFile());
+    Optional<String> localRepoLocation = this.config.getLocalRepo();
+    if (localRepoLocation.isPresent()) {
+      this.localRepo = new LocalRepository(new File(localRepoLocation.get()));
+    } else if (localInstallOnly) {
+      // if local_repo in .buckconfig or $M2_REPO are not set, use the Maven default: ${user.home}/.m2/repository/
+      this.localRepo = new LocalRepository(
+          Paths.get(System.getProperty("user.home"), ".m2/repository/").toFile());
+    } else {
+      this.localRepo = new LocalRepository(localRepoPath.toFile());
+    }
 
     ArtifactConfig.Repository repo = new ArtifactConfig.Repository();
     repo.url = remoteRepoUrl.or(this.config.getPublishRepoUrl()).or(MAVEN_CENTRAL).toString();
@@ -308,6 +326,18 @@ public class Publisher {
       return new DeployResult(deployRequest)
           .setArtifacts(toPublish)
           .setMetadata(deployRequest.getMetadata());
+    } else if (localInstallOnly) {
+      InstallRequest installRequest = new InstallRequest()
+          .setArtifacts(deployRequest.getArtifacts())
+          .setMetadata(deployRequest.getMetadata());
+      try {
+        InstallResult installResult = repoSys.install(session, installRequest);
+        return new DeployResult(deployRequest)
+            .setArtifacts(installResult.getArtifacts())
+            .setMetadata(installResult.getMetadata());
+      } catch (InstallationException e) {
+        throw new DeploymentException("Failed to install artifacts", e);
+      }
     } else {
       return repoSys.deploy(session, deployRequest);
 

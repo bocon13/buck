@@ -51,6 +51,7 @@ public class PublishCommand extends BuildCommand {
   public static final String INCLUDE_SOURCE_SHORT_ARG = "-s";
   public static final String INCLUDE_JAVADOC_LONG_ARG = "--include-javadoc";
   public static final String TO_MAVEN_CENTRAL_LONG_ARG = "--to-maven-central";
+  public static final String TO_LOCAL_REPO_LONG_ARG = "--to-local-repo";
   public static final String DRY_RUN_LONG_ARG = "--dry-run";
   public static final String SIGN_LONG_ARG = "--sign";
 
@@ -65,6 +66,11 @@ public class PublishCommand extends BuildCommand {
       name = TO_MAVEN_CENTRAL_LONG_ARG,
       usage = "Same as \"" + REMOTE_REPO_LONG_ARG + " " + Publisher.MAVEN_CENTRAL_URL + "\"")
   private boolean toMavenCentral = false;
+
+  @Option(
+      name = TO_LOCAL_REPO_LONG_ARG,
+      usage = "Install artifacts in the local Maven repository")
+  private boolean toLocalRepo = false;
 
   @Option(
       name = INCLUDE_SOURCE_LONG_ARG,
@@ -91,10 +97,11 @@ public class PublishCommand extends BuildCommand {
   public int runWithoutHelp(CommandRunnerParams params) throws IOException, InterruptedException {
 
     // Input validation
-    if (remoteRepo == null && !toMavenCentral) {
+    if (remoteRepo == null && !toMavenCentral && !toLocalRepo) {
       params.getBuckEventBus().post(ConsoleEvent.severe(
-          "Please specify a remote repository to publish to.\n" +
-              "Use " + REMOTE_REPO_LONG_ARG + " <URL> or " + TO_MAVEN_CENTRAL_LONG_ARG));
+          "Please specify a remote repository to publish to or add local install flag.\n" +
+              "Use " + REMOTE_REPO_LONG_ARG + " <URL> or " + TO_MAVEN_CENTRAL_LONG_ARG + " or " +
+              TO_LOCAL_REPO_LONG_ARG));
       return 1;
     }
 
@@ -148,6 +155,7 @@ public class PublishCommand extends BuildCommand {
         params.getConsole().getStdOut(), // FIXME BOC pass through better
         params.getBuckConfig(), // FIXME BOC pass through better
         dryRun,
+        toLocalRepo,
         signArtifacts);
 
     try {
