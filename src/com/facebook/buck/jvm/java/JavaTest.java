@@ -385,6 +385,8 @@ public class JavaTest
   private TestCaseSummary getTestClassFailedSummary(
       String testClass,
       String message,
+      String stdout,
+      String stderr,
       long time) {
     return new TestCaseSummary(
         testClass,
@@ -396,8 +398,8 @@ public class JavaTest
                 time,
                 message,
                 "",
-                "",
-                "")));
+                stdout,
+                stderr)));
   }
 
   @Override
@@ -445,6 +447,8 @@ public class JavaTest
                   getTestClassFailedSummary(
                       testClass,
                       message,
+                      junit.getStdout(),
+                      junit.getStderr(),
                       testRuleTimeoutMs.or(0L)));
             }
           // Not having a test result file at all (which only happens when we are using test
