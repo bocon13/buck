@@ -69,6 +69,8 @@ abstract class AbstractTestRunningOptions {
 
   public abstract Optional<String> getPathToXmlTestOutput();
 
+  public abstract Optional<String> getPathToSurefireXmlTestOutput();
+
   public abstract Optional<String> getPathToJavaAgent();
 
   @Value.Default

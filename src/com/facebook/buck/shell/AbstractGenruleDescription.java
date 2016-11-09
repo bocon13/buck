@@ -32,12 +32,14 @@ import com.facebook.buck.rules.SourcePath;
 import com.facebook.buck.rules.SourcePathResolver;
 import com.facebook.buck.rules.TargetGraph;
 import com.facebook.buck.rules.args.MacroArg;
+import com.facebook.buck.rules.macros.BinDirectoryMacroExpander;
 import com.facebook.buck.rules.macros.ClasspathMacroExpander;
 import com.facebook.buck.rules.macros.ExecutableMacroExpander;
 import com.facebook.buck.rules.macros.LocationMacroExpander;
 import com.facebook.buck.rules.macros.MacroExpander;
 import com.facebook.buck.rules.macros.MacroHandler;
 import com.facebook.buck.rules.macros.MavenCoordinatesMacroExpander;
+import com.facebook.buck.rules.macros.SourcesMacroExpander;
 import com.facebook.buck.rules.macros.WorkerMacroExpander;
 import com.facebook.buck.util.HumanReadableException;
 import com.facebook.infer.annotation.SuppressFieldNotInitialized;
@@ -60,6 +62,8 @@ public abstract class AbstractGenruleDescription<T extends AbstractGenruleDescri
           .put("worker", new WorkerMacroExpander())
           .put("location", new LocationMacroExpander())
           .put("maven_coords", new MavenCoordinatesMacroExpander())
+          .put("srcs", new SourcesMacroExpander())
+          .put("bin_dir", new BinDirectoryMacroExpander())
           .build());
 
   protected <A extends T> BuildRule createBuildRule(

@@ -436,6 +436,16 @@ public class TestRunning {
       }
     }
 
+    // Write out the results as Surefire XML, if requested.
+    Optional<String> surefirePath = options.getPathToSurefireXmlTestOutput();
+    if (surefirePath.isPresent()) {
+      try (Writer writer = Files.newWriter(
+          new File(surefirePath.get()),
+          Charsets.UTF_8)) {
+        writeSurefireXmlOutput(completedResults, writer);
+      }
+    }
+
     // Generate the code coverage report.
     if (options.isCodeCoverageEnabled() && !rulesUnderTest.isEmpty()) {
       try {
@@ -718,6 +728,70 @@ public class TestRunning {
           addExtraXmlInfo(testCase, testEl);
         }
       }
+
+      // Write XML to the writer.
+      TransformerFactory tf = TransformerFactory.newInstance();
+      Transformer transformer = tf.newTransformer();
+      transformer.transform(new DOMSource(doc), new StreamResult(writer));
+    } catch (TransformerException | ParserConfigurationException ex) {
+      throw new IOException("Unable to build the XML document!");
+    }
+  }
+
+  /**
+   * Writes the test results in Surefire XML format to the supplied writer.
+   *
+   * This method does NOT close the writer object.
+   * @param allResults The test results.
+   * @param writer The writer in which the XML data will be written to.
+   */
+  public static void writeSurefireXmlOutput(List<TestResults> allResults, Writer writer)
+      throws IOException {
+    try {
+      // Build the XML output.
+      DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+      DocumentBuilder docBuilder = dbf.newDocumentBuilder();
+      Document doc = docBuilder.newDocument();
+      Element testsEl = doc.createElement("testsuite");
+      //FIXME add name, tests, errors, skipped, failures
+      doc.appendChild(testsEl);
+
+      long totalTime = 0, failures = 0, tests = 0;
+      for (TestResults results : allResults) {
+        // FIXME Only aggregate junit test results
+        for (TestCaseSummary testCase : results.getTestCases()) {
+          String classname = testCase.getTestCaseName();
+          for (TestResultSummary testResult : testCase.getTestResults()) {
+            // Extract the test name and time.
+            String name = Strings.nullToEmpty(testResult.getTestName());
+            String time = Long.toString(testResult.getTime());
+
+            Element testCaseEl = doc.createElement("testcase");
+            testCaseEl.setAttribute("name", name);
+            testCaseEl.setAttribute("classname", classname);
+            testCaseEl.setAttribute("time", time);
+            testsEl.appendChild(testCaseEl);
+
+            if (!testResult.isSuccess()) {
+              Element failureEl = doc.createElement("failure");
+              failureEl.setAttribute("type", testResult.getMessage());
+              testCaseEl.appendChild(failureEl);
+            }
+          }
+          totalTime += testCase.getTotalTime();
+        }
+        failures += results.getFailureCount();
+        tests += results.getTotalNumberOfTests();
+      }
+
+      testsEl.setAttribute("name", "project_junit"); //FIXME
+      testsEl.setAttribute("time", Long.toString(totalTime));
+      testsEl.setAttribute("tests", Long.toString(tests));
+      testsEl.setAttribute("failures", Long.toString(failures));
+      testsEl.setAttribute("skipped", Long.toString(0L));
+      testsEl.setAttribute("errors", Long.toString(0L));
+
+      //FIXME add properties
 
       // Write XML to the writer.
       TransformerFactory tf = TransformerFactory.newInstance();

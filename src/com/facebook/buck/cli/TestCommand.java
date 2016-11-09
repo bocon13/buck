@@ -107,6 +107,10 @@ public class TestCommand extends BuildCommand {
   @Nullable
   private String pathToXmlTestOutput = null;
 
+  @Option(name = "--surefire-xml", usage = "Where to write test output as Surefire XML.")
+  @Nullable
+  private String pathToSurefireTestOutput = null;
+
   @Option(name = "--run-with-java-agent",
       usage = "Whether the test will start a java profiling agent")
   @Nullable
@@ -272,6 +276,7 @@ public class TestCommand extends BuildCommand {
         .setDryRun(isDryRun)
         .setShufflingTests(isShufflingTests)
         .setPathToXmlTestOutput(Optional.fromNullable(pathToXmlTestOutput))
+        .setPathToSurefireXmlTestOutput(Optional.fromNullable(pathToSurefireTestOutput))
         .setPathToJavaAgent(Optional.fromNullable(pathToJavaAgent))
         .setCoverageReportFormat(coverageReportFormat)
         .setCoverageReportTitle(coverageReportTitle)
