@@ -1,4 +1,4 @@
-#@# GENERATED FILE: DO NOT MODIFY 859ed19759e7abf00307a0d760a7d2cc64b90f4a #@#
+#@# GENERATED FILE: DO NOT MODIFY 8dbef50bed42c7d421dc272242fda747ea2b66af #@#
 {
   "cli" : {
     "deps" : [
@@ -65,6 +65,7 @@
       "//src/com/facebook/buck/util/shutdown:shutdown",
       "//src/com/facebook/buck/util/versioncontrol:impl",
       "//src/com/facebook/buck/util/versioncontrol:versioncontrol",
+      "//third-party/java/aether:aether-api",
       "//third-party/java/aosp:aosp",
       "//third-party/java/immutables:processor",
       "//third-party/java/jackson:jackson-core",
@@ -111,7 +112,6 @@
       "//src/com/facebook/buck/util/environment:environment",
       "//src/com/facebook/buck/util/environment:platform",
       "//src/com/facebook/buck/util/immutables:immutables",
-      "//third-party/java/aether:aether-api",
       "//third-party/java/args4j:args4j",
       "//third-party/java/guava:guava",
       "//third-party/java/infer-annotations:infer-annotations",

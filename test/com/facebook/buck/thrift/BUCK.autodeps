@@ -1,4 +1,4 @@
-#@# GENERATED FILE: DO NOT MODIFY 2ad874e14d6ab6d85d7faa16c48daa88c6d6b337 #@#
+#@# GENERATED FILE: DO NOT MODIFY e5764fa6423ee38eb28e265fca8f171b29f79699 #@#
 {
   "thrift" : {
     "deps" : [
@@ -16,6 +16,7 @@
       "//src/com/facebook/buck/parser:config",
       "//src/com/facebook/buck/parser:parser",
       "//src/com/facebook/buck/parser:rule_pattern",
+      "//src/com/facebook/buck/plugin:plugin",
       "//src/com/facebook/buck/python:rules",
       "//src/com/facebook/buck/rules:action_graph_cache",
       "//src/com/facebook/buck/rules:build_rule",

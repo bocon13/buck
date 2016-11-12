@@ -84,6 +84,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -439,11 +440,9 @@ public class TestRunning {
     // Write out the results as Surefire XML, if requested.
     Optional<String> surefirePath = options.getPathToSurefireXmlTestOutput();
     if (surefirePath.isPresent()) {
-      try (Writer writer = Files.newWriter(
-          new File(surefirePath.get()),
-          Charsets.UTF_8)) {
-        writeSurefireXmlOutput(completedResults, writer);
-      }
+      //FIXME clean the directory
+      new File(surefirePath.get()).mkdirs();
+      writeSurefireXmlOutput(completedResults, surefirePath.get());
     }
 
     // Generate the code coverage report.
@@ -743,28 +742,29 @@ public class TestRunning {
    *
    * This method does NOT close the writer object.
    * @param allResults The test results.
-   * @param writer The writer in which the XML data will be written to.
+   * @param surefirePath Path where XML result files should be written.
    */
-  public static void writeSurefireXmlOutput(List<TestResults> allResults, Writer writer)
+  public static void writeSurefireXmlOutput(List<TestResults> allResults, String surefirePath)
       throws IOException {
-    try {
-      // Build the XML output.
-      DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-      DocumentBuilder docBuilder = dbf.newDocumentBuilder();
-      Document doc = docBuilder.newDocument();
-      Element testsEl = doc.createElement("testsuite");
-      //FIXME add name, tests, errors, skipped, failures
-      doc.appendChild(testsEl);
 
-      long totalTime = 0, failures = 0, tests = 0;
-      for (TestResults results : allResults) {
-        // FIXME Only aggregate junit test results
-        for (TestCaseSummary testCase : results.getTestCases()) {
-          String classname = testCase.getTestCaseName();
+    for (TestResults results : allResults) {
+      // FIXME Only aggregate junit test results
+      for (TestCaseSummary testCase : results.getTestCases()) {
+        String classname = testCase.getTestCaseName();
+        String filename = String.format("TEST-%s.xml", classname);
+
+        try {
+          // Build the XML output.
+          DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+          DocumentBuilder docBuilder = dbf.newDocumentBuilder();
+          Document doc = docBuilder.newDocument();
+          Element testsEl = doc.createElement("testsuite");
+          doc.appendChild(testsEl);
+
           for (TestResultSummary testResult : testCase.getTestResults()) {
             // Extract the test name and time.
             String name = Strings.nullToEmpty(testResult.getTestName());
-            String time = Long.toString(testResult.getTime());
+            String time = Double.toString(testResult.getTime()/1000.0);
 
             Element testCaseEl = doc.createElement("testcase");
             testCaseEl.setAttribute("name", name);
@@ -778,27 +778,31 @@ public class TestRunning {
               testCaseEl.appendChild(failureEl);
             }
           }
-          totalTime += testCase.getTotalTime();
+
+          testsEl.setAttribute("name", classname);
+          testsEl.setAttribute("time", Double.toString(testCase.getTotalTime()/1000.0));
+          //FIXME is this the right way?
+          Preconditions.checkState(testCase.getPassedCount() + testCase.getFailureCount() +
+              testCase.getSkippedCount() == testCase.getTestResults().size());
+          testsEl.setAttribute("tests", Long.toString(testCase.getTestResults().size()));
+          testsEl.setAttribute("failures", Long.toString(testCase.getFailureCount()));
+          testsEl.setAttribute("skipped", Long.toString(testCase.getSkippedCount()));
+          testsEl.setAttribute("errors", Long.toString(0L));
+
+          //FIXME add properties
+
+          try (Writer writer = Files.newWriter(
+              Paths.get(surefirePath, filename).toFile(),
+              Charsets.UTF_8)) {
+            // Write XML to the writer.
+            TransformerFactory tf = TransformerFactory.newInstance();
+            Transformer transformer = tf.newTransformer();
+            transformer.transform(new DOMSource(doc), new StreamResult(writer));
+          }
+        } catch(TransformerException | ParserConfigurationException ex){
+          throw new IOException("Unable to build the XML document!");
         }
-        failures += results.getFailureCount();
-        tests += results.getTotalNumberOfTests();
       }
-
-      testsEl.setAttribute("name", "project_junit"); //FIXME
-      testsEl.setAttribute("time", Long.toString(totalTime));
-      testsEl.setAttribute("tests", Long.toString(tests));
-      testsEl.setAttribute("failures", Long.toString(failures));
-      testsEl.setAttribute("skipped", Long.toString(0L));
-      testsEl.setAttribute("errors", Long.toString(0L));
-
-      //FIXME add properties
-
-      // Write XML to the writer.
-      TransformerFactory tf = TransformerFactory.newInstance();
-      Transformer transformer = tf.newTransformer();
-      transformer.transform(new DOMSource(doc), new StreamResult(writer));
-    } catch (TransformerException | ParserConfigurationException ex) {
-      throw new IOException("Unable to build the XML document!");
     }
   }
 

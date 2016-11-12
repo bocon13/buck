@@ -1,4 +1,4 @@
-#@# GENERATED FILE: DO NOT MODIFY a797f506261ced1a48e163f621e813cfba1c85e7 #@#
+#@# GENERATED FILE: DO NOT MODIFY 18294d3e3aaeb7ef40751deffb3ce0ce741004fa #@#
 {
   "autodeps" : {
     "deps" : [
@@ -25,12 +25,12 @@
   },
   "config" : {
     "deps" : [
+      "//src/com/facebook/buck/model:model",
       "//src/com/facebook/buck/util:exceptions"
     ],
     "exported_deps" : [
       "//src/com/facebook/buck/cli:config",
       "//src/com/facebook/buck/jvm/java:support",
-      "//src/com/facebook/buck/model:model",
       "//src/com/facebook/buck/rules:build_rule",
       "//third-party/java/guava:guava"
     ]

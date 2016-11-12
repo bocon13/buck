@@ -1,4 +1,4 @@
-#@# GENERATED FILE: DO NOT MODIFY 6357831162ad5c955075e1322d3c92e52dda496f #@#
+#@# GENERATED FILE: DO NOT MODIFY 0b384cfb102e584bccb8a21a0d528343105ea6b3 #@#
 {
   "rules" : {
     "deps" : [
@@ -20,6 +20,7 @@
       "//src/com/facebook/buck/model:build_id",
       "//src/com/facebook/buck/model:model",
       "//src/com/facebook/buck/parser:rule_pattern",
+      "//src/com/facebook/buck/plugin:plugin",
       "//src/com/facebook/buck/rules:action_graph_cache",
       "//src/com/facebook/buck/rules:build_rule",
       "//src/com/facebook/buck/rules:caching_build_engine_delegates",
@@ -38,7 +39,6 @@
       "//src/com/facebook/buck/shell:rules",
       "//src/com/facebook/buck/step:step",
       "//src/com/facebook/buck/step/fs:fs",
-      "//src/com/facebook/buck/test:test",
       "//src/com/facebook/buck/test/selectors:selectors",
       "//src/com/facebook/buck/timing:timing",
       "//src/com/facebook/buck/util:exceptions",
@@ -86,6 +86,7 @@
     "deps" : [
       "//src/com/facebook/buck/artifact_cache:artifact_cache",
       "//src/com/facebook/buck/model:build_id",
+      "//src/com/facebook/buck/plugin:plugin",
       "//src/com/facebook/buck/rules/coercer:coercer",
       "//src/com/facebook/buck/timing:timing",
       "//src/com/facebook/buck/util:object_mapper",
@@ -96,6 +97,7 @@
       "//test/com/facebook/buck/model:testutil",
       "//test/com/facebook/buck/step:testutil",
       "//test/com/facebook/buck/testutil:testutil",
+      "//third-party/java/cglib:cglib",
       "//third-party/java/jackson:jackson-databind",
       "//third-party/java/jsr:jsr305",
       "//third-party/java/junit:junit"
@@ -123,7 +125,6 @@
       "//src/com/facebook/buck/util/concurrent:concurrent",
       "//src/com/facebook/buck/util/sha1:sha1",
       "//test/com/facebook/buck/util:testutil",
-      "//third-party/java/cglib:cglib",
       "//third-party/java/guava:guava"
     ]
   }
