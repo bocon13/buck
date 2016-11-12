@@ -16,8 +16,7 @@
 
 package com.facebook.buck.rules.macros;
 
-import com.facebook.buck.jvm.java.DefaultJavaLibrary;
-import com.facebook.buck.jvm.java.JavaTest;
+import com.facebook.buck.jvm.java.HasClasspathEntries;
 import com.facebook.buck.model.MacroException;
 import com.facebook.buck.rules.BuildRule;
 import com.facebook.buck.rules.SourcePathResolver;
@@ -31,11 +30,11 @@ public class SourcesMacroExpander extends BuildTargetMacroExpander {
   @Override
   public String expand(SourcePathResolver resolver, BuildRule rule)
       throws MacroException {
-    if (rule instanceof JavaTest) {
-      rule = ((JavaTest) rule).getCompiledTestsLibrary();
-    }
-    if (rule instanceof DefaultJavaLibrary) {
-      DefaultJavaLibrary javaLibrary = (DefaultJavaLibrary) rule;
+//    if (rule instanceof JavaTest) {
+//      rule = ((JavaTest) rule).getCompiledTestsLibrary();
+//    }
+    if (rule instanceof HasClasspathEntries) {
+      HasClasspathEntries javaLibrary = (HasClasspathEntries) rule;
       return javaLibrary.getSources().stream()
           .map(src -> resolver.getAbsolutePath(src).toAbsolutePath().toString())
           .collect(Collectors.joining(" "));

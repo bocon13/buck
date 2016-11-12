@@ -16,11 +16,13 @@
 
 package com.facebook.buck.rules.macros;
 
-import com.facebook.buck.jvm.java.DefaultJavaLibrary;
-import com.facebook.buck.jvm.java.JavaTest;
+import com.facebook.buck.jvm.java.HasClasspathEntries;
 import com.facebook.buck.model.MacroException;
 import com.facebook.buck.rules.BuildRule;
 import com.facebook.buck.rules.SourcePathResolver;
+import com.google.common.base.Optional;
+
+import java.nio.file.Path;
 
 /**
  * Resolves to the binary directory (e.g. classes directory) for a build target.
@@ -29,13 +31,19 @@ public class BinDirectoryMacroExpander extends BuildTargetMacroExpander {
   @Override
   public String expand(SourcePathResolver resolver, BuildRule rule)
       throws MacroException {
-    if (rule instanceof JavaTest) {
-      rule = ((JavaTest) rule).getCompiledTestsLibrary();
+    if (rule instanceof HasClasspathEntries) {
+      Optional<Path> dir = ((HasClasspathEntries) rule).getClassesDirectory();
+      if (dir.isPresent()) {
+        return dir.get().toAbsolutePath().toString();
+      }
     }
-    if (rule instanceof DefaultJavaLibrary) {
-      return DefaultJavaLibrary.getClassesDir(rule.getBuildTarget(), rule.getProjectFilesystem())
-          .toAbsolutePath().toString();
-    }
+//    if (rule instanceof JavaTest) {
+//      rule = ((JavaTest) rule).getCompiledTestsLibrary();
+//    }
+//    if (rule instanceof DefaultJavaLibrary) {
+//      return DefaultJavaLibrary.getClassesDir(rule.getBuildTarget(), rule.getProjectFilesystem())
+//          .toAbsolutePath().toString();
+//    }
     throw new MacroException(String.format(
         "%s used in bin directory macro is of unsupported type: %s",
         rule.getBuildTarget(),

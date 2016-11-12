@@ -16,7 +16,10 @@
 
 package com.facebook.buck.jvm.java;
 
+import com.facebook.buck.rules.SourcePath;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
 
 import java.nio.file.Path;
 
@@ -52,4 +55,13 @@ public interface HasClasspathEntries {
    * of any exported deps.
    */
   ImmutableSet<Path> getOutputClasspaths();
+
+  default Optional<Path> getClassesDirectory() {
+    return Optional.absent();
+  }
+
+  default ImmutableSortedSet<SourcePath> getSources() {
+    return ImmutableSortedSet.of();
+  }
+
 }

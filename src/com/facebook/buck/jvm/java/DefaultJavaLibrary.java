@@ -392,6 +392,12 @@ public class DefaultJavaLibrary extends AbstractBuildRule
   }
 
   @Override
+  public Optional<Path> getClassesDirectory() {
+    return Optional.of(
+        DefaultJavaLibrary.getClassesDir(this.getBuildTarget(), getProjectFilesystem()));
+  }
+
+  @Override
   public ImmutableSortedSet<BuildRule> getExportedDeps() {
     return exportedDeps;
   }

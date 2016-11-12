@@ -36,6 +36,7 @@ import com.facebook.buck.rules.ExternalTestRunnerTestSpec;
 import com.facebook.buck.rules.HasPostBuildSteps;
 import com.facebook.buck.rules.HasRuntimeDeps;
 import com.facebook.buck.rules.Label;
+import com.facebook.buck.rules.SourcePath;
 import com.facebook.buck.rules.SourcePathResolver;
 import com.facebook.buck.rules.TestRule;
 import com.facebook.buck.step.AbstractExecutionStep;
@@ -511,6 +512,16 @@ public class JavaTest
   @Override
   public ImmutableSet<Path> getOutputClasspaths() {
     return compiledTestsLibrary.getOutputClasspaths();
+  }
+
+  @Override
+  public Optional<Path> getClassesDirectory() {
+    return this.getCompiledTestsLibrary().getClassesDirectory();
+  }
+
+  @Override
+  public ImmutableSortedSet<SourcePath> getSources() {
+    return this.getCompiledTestsLibrary().getSources();
   }
 
   @Override

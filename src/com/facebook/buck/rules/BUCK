@@ -227,6 +227,7 @@ java_immutables_library(
     # srcs. This is probably for legacy reasons: we can (and should) move
     # :build_event into its own package and make it a PUBLIC rule.
     '//src/com/facebook/buck/rules:build_event',
+    '//third-party/java/stringtemplate:stringtemplate',
   ],
   visibility = ['PUBLIC'],
 )
