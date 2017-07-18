@@ -84,7 +84,7 @@ public class ProcessTracker extends AbstractScheduledService implements AutoClos
   }
 
   private void refreshProcessesInfo() {
-    LOG.info("refreshProcessesInfo: processes before: %d", processesInfo.size());
+    LOG.verbose("refreshProcessesInfo: processes before: %d", processesInfo.size());
     Iterator<Map.Entry<Long, ProcessInfo>> it;
     for (it = processesInfo.entrySet().iterator(); it.hasNext(); ) {
       Map.Entry<Long, ProcessInfo> entry = it.next();
@@ -98,7 +98,7 @@ public class ProcessTracker extends AbstractScheduledService implements AutoClos
         it.remove();
       }
     }
-    LOG.info("refreshProcessesInfo: processes after: %d", processesInfo.size());
+    LOG.verbose("refreshProcessesInfo: processes after: %d", processesInfo.size());
   }
 
   @Override
